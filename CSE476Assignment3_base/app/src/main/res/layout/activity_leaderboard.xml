@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The following code is written based on YouTube videos I watched -->
+<!-- Root ConstraintLayout for the Leaderboard screen -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@drawable/leaderboard_bg"
+    tools:context="com.example.cse476assignment2.LeaderboardActivity">
+
+    <!-- ScrollView makes the leaderboard scrollable for long lists -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/leaderboard_bg"
+        android:padding="16dp">
+
+        <!-- Vertical container holding all leaderboard content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+
+            <!-- Leaderboard title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/leaderboard_text_page"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="#FFD700"
+                android:paddingTop="24dp"
+                android:paddingBottom="24dp"
+                android:shadowColor="#FFAA00"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4" />
+
+            <!-- Top 3 Player Cards with gold, silver, bronze backgrounds -->
+
+            <!-- Player Card 1: Gold -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/gold_bg"
+                android:gravity="center_vertical">
+
+                <!-- Medal Image -->
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/a1st_prize_11336942ccc"
+                    android:contentDescription="@string/gold_medal"
+                    android:layout_marginEnd="13dp" />
+
+                <!-- Player name -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:text="@string/first_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <!-- Player points -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/first_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 2: Silver -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/silver_bg"
+                android:gravity="center_vertical">
+
+                <!-- Medal Image -->
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/a2nd_place_11336872ccc"
+                    android:contentDescription="@string/silver_medal"
+                    android:layout_marginEnd="13dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:text="@string/second_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/second_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 3 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bronze_bg"
+                android:gravity="center_vertical">
+
+                <!-- Medal Image -->
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/a3rd_place_11336896ccc"
+                    android:contentDescription="@string/bronze_medal"
+                    android:layout_marginEnd="13dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:text="@string/third_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/third_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player 4-10: Standard leaderboard card style -->
+            <!-- Each card shows: Rank, Player name, Points -->
+
+            <!-- Player Card 4 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/fourth_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/fourth_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/fourth_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 5 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/fifth_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/fifth_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/fifth_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 6 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/sixth_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/sixth_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/sixth_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 7 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/seventh_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/seventh_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/seventh_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 8 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/eighth_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/eighth_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/eighth_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 9 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/ninth_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/ninth_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/ninth_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Player Card 10 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/leaderboard_card"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.1"
+                    android:text="@string/tenth_place"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#F5F5F5" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="10"
+                    android:text="@string/tenth_place_name"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="@string/tenth_place_points"
+                    android:textSize="18sp"
+                    android:textColor="#80FF80"
+                    android:gravity="end" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- Back button in top-left corner -->
+    <ImageButton
+        android:contentDescription="@string/bck_btn"
+        android:id="@+id/backButton"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:background="@android:color/transparent"
+        android:padding="8dp"
+        android:src="@drawable/back_arrow_top_part"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

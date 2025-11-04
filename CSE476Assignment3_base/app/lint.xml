@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!--Claude said the following: This is a known issue in Android Studio - it's actually a
+    false positive warning that can be safely ignored. The warning appears even when your setup is
+    correct. Android Studio's lint checker sees both the XML adaptive icon and the bitmap files
+    with the same name (ic_launcher) and flags it as a potential issue, even though this is the
+    correct and intended setup for supporting both modern (API 26+) and older Android versions.-->
+    <issue id="IconXmlAndPng" severity="ignore" />
+    <issue id="IconMissingDensityFolder" severity="ignore" />
+</lint>

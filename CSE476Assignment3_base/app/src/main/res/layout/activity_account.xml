@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The following code is written based on YouTube videos I watched -->
+<!-- Root ConstraintLayout that contains the whole account screen -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.cse476assignment2.AccountActivity">
+    <!--android:background="#ececec">-->
+
+    <!-- ScrollView ensures everything is scrollable on smaller screens -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Vertical container for all content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header section with background image, profile picture, and username -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- Top banner background -->
+                <ImageView
+                    android:id="@+id/imageView3"
+                    android:layout_width="411dp"
+                    android:layout_height="252dp"
+                    android:contentDescription="@string/top_banner_bg"
+                    android:scaleType="fitXY"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="1.0"
+                    app:srcCompat="@drawable/top_background" />
+
+                <!-- Profile icon inside the banner -->
+                <ImageView
+                    android:id="@+id/imageView5"
+                    android:layout_width="128dp"
+                    android:layout_height="141dp"
+                    android:layout_marginStart="141dp"
+                    android:layout_marginTop="45dp"
+                    android:layout_marginEnd="145dp"
+                    android:layout_marginBottom="88dp"
+                    android:contentDescription="@string/profile_icon_inside_banner"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    app:layout_constraintEnd_toEndOf="@+id/imageView3"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="@+id/imageView3"
+                    app:layout_constraintTop_toTopOf="@+id/imageView3"
+                    app:layout_constraintVertical_bias="0.0"
+                    app:srcCompat="@drawable/profile_icon" />
+
+                <!-- Username text shown below profile icon -->
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:textColor="#000000"
+                    android:textSize="25sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    app:layout_constraintEnd_toEndOf="@+id/imageView5"
+                    android:text="@string/user_default"
+                    app:layout_constraintHorizontal_bias="0.542"
+                    app:layout_constraintStart_toStartOf="@+id/imageView5"
+                    app:layout_constraintTop_toBottomOf="@+id/imageView5"
+                    app:layout_constraintVertical_bias="0.0" />
+
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Button section for navigation -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <!-- Account settings button -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/btn_background_1"
+                    android:backgroundTint="#D3D3D3"
+                    android:drawableStart="@drawable/settings_8568879"
+                    android:drawablePadding="20dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/account_settings_btn"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    style="@android:style/Widget.Button"
+                    android:textAlignment="viewStart"
+                    android:textColor="@android:color/black"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    tools:layout_editor_absoluteX="0dp" />
+
+                <!-- Leaderboard button -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/btn_background_1"
+                    android:backgroundTint="#D3D3D3"
+                    android:drawableStart="@drawable/leaderboard_119"
+                    android:drawablePadding="20dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/leaderboard_btn"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    style="@android:style/Widget.Button"
+                    android:textAlignment="viewStart"
+                    android:textColor="@android:color/black"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    tools:layout_editor_absoluteX="0dp" />
+
+                <!-- Messages button -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/btn_background_1"
+                    android:backgroundTint="#D3D3D3"
+                    android:drawableStart="@drawable/chatting_10000875"
+                    android:drawablePadding="20dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/messages_btn"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    style="@android:style/Widget.Button"
+                    android:textAlignment="viewStart"
+                    android:textColor="@android:color/black"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    tools:layout_editor_absoluteX="0dp" />
+
+                <!-- Community posts button -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonCommunityPosts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/btn_background_1"
+                    android:backgroundTint="#D3D3D3"
+                    android:drawableStart="@drawable/posts_15841202"
+                    android:drawablePadding="20dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/community_post_btn"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    style="@android:style/Widget.Button"
+                    android:textAlignment="viewStart"
+                    android:textColor="@android:color/black"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    tools:layout_editor_absoluteX="0dp" />
+
+                <!-- Achievements button -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/btn_background_1"
+                    android:backgroundTint="#D3D3D3"
+                    android:drawableStart="@drawable/achievements1"
+                    android:drawablePadding="20dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="@string/achievements_btn"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    style="@android:style/Widget.Button"
+                    android:textAlignment="viewStart"
+                    android:textColor="@android:color/black"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                    tools:layout_editor_absoluteX="0dp" />
+
+                <!-- Logout button (special style, bigger text, red background) -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:layout_width="match_parent"
+                    android:id="@+id/logoutButton"
+                    android:layout_height="60dp"
+                    style="@android:style/Widget.Button"
+                    android:background="@drawable/btn_background_2"
+                    android:layout_marginEnd="32dp"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/logout"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold"
+                    android:textSize="20sp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,97 @@
+<resources>
+    <string name="app_name">CSE476 Assignment 3</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="remember_me">Keep me logged in</string>
+
+    <string name="go_to_leaderboard">Leaderboard</string>
+    <string name="go_to_community_posts">Community Posts</string>
+    <!---<string name="leaderboard_page">Leaderboard Page</string> -->
+    <string name="leaderboard_text_page">🏆 Leaderboard 🏆</string>
+    <!--<string name="welcome_msg">Welcome to your account!</string> -->
+    <string name="logout">Logout</string>
+    <string name="user_default">User</string>
+    <!--<string name="my_bck_btn_color">#d7d9d7</string> -->
+
+    <string name="account_settings_btn">Account Settings</string>
+    <string name="messages_btn">Messages</string>
+    <string name="community_post_btn">Community Posts</string>
+    <string name="leaderboard_btn">Leaderboard</string>
+    <string name="achievements_btn">Achievements</string>
+
+    <!-- <string name="first_place">1</string> -->
+    <!-- <string name="second_place">2</string> -->
+    <!-- <string name="third_place">3</string> -->
+    <string name="fourth_place">4</string>
+    <string name="fifth_place">5</string>
+    <string name="sixth_place">6</string>
+    <string name="seventh_place">7</string>
+    <string name="eighth_place">8</string>
+    <string name="ninth_place">9</string>
+    <string name="tenth_place">10</string>
+    <string name="first_place_name">DogeMaster ‍🐶🌟</string>
+    <string name="second_place_name">ShrekOnFleek 🐸🔥</string>
+    <string name="third_place_name">RickRoller 🎵🤘</string>
+    <string name="fourth_place_name">PizzaWizard 🍕🪄</string>
+    <string name="fifth_place_name">BigChungus 🐰💪</string>
+    <string name="sixth_place_name">BigBrainEnergy 🧠💥</string>
+    <string name="seventh_place_name">HonkMaster 🦆🎺</string>
+    <string name="eighth_place_name">WaffleWowza 🧇✨</string>
+    <string name="ninth_place_name">PewPewPotato 🔫🥔</string>
+    <string name="tenth_place_name">CringePatrol 🚨🤡</string>
+    <string name="first_place_points">1200 pts</string>
+    <string name="second_place_points">1100 pts</string>
+    <string name="third_place_points">998 pts</string>
+    <string name="fourth_place_points">950 pts</string>
+    <string name="fifth_place_points">947 pts</string>
+    <string name="sixth_place_points">912 pts</string>
+    <string name="seventh_place_points">877 pts</string>
+    <string name="eighth_place_points">845 pts</string>
+    <string name="ninth_place_points">701 pts</string>
+    <string name="tenth_place_points">536 pts</string>
+
+    <string name="gold_medal">Gold Medal</string>
+    <string name="silver_medal">Silver Medal</string>
+    <string name="bronze_medal">Bronze Medal</string>
+    <string name="bck_btn">Back</string>
+
+
+    <string name="top_banner_bg">Top banner background</string>
+    <string name="profile_icon_inside_banner">Profile icon inside banner</string>
+    <string name="app_logo">App Logo</string>
+
+
+
+    <string name="app_title">Unimeme</string>
+<!--    <string name="post_author_1">Post author 1</string>-->
+    <string name="post_image_description">Post image description</string>
+    <string name="post_caption_1">Me when classes end and I get to go home</string>
+<!--    <string name="post_author_2">Post author 2</string>-->
+    <string name="post_caption_2">Average 8am lecture be like</string>
+<!--    <string name="post_author_3">Post author 3</string>-->
+    <string name="post_caption_3">Just hanging out at Beaumont Tower</string>
+
+    <string name="button_daily_challenge">Daily Challenge</string>
+    <string name="button_add_post">Add Post</string>
+
+    <string name="photo_preview">Photo Preview</string>
+
+    <string name="you_as_user">You</string>
+    <string name="captured_image_view">Captured image view</string>
+    <string name="photo_preview_overlay">Photo preview overlay</string>
+    <string name="write_a_caption">Write a caption…</string>
+    <string name="add_a_caption">Add a caption…</string>
+    <string name="post_image">Post image</string>
+    <string name="capture">Capture</string>
+    <string name="post">Post</string>
+    <string name="cancel">Cancel</string>
+    <string name="continue_next">Continue</string>
+    <string name="grayscale">Grayscale</string>
+    <string name="sepia">Sepia</string>
+    <string name="bright">Bright</string>
+    <string name="cool">Cool</string>
+    <string name="reset">Reset</string>
+
+
+</resources>
