@@ -42,6 +42,7 @@
         <activity android:name=".CommunityPostsActivity" />
         <activity android:name=".CameraXActivity" />
         <activity android:name=".PostPreviewActivity" />
+        <activity android:name=".MediaPickerActivity" />
 
 
 

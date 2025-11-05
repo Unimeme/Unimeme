@@ -33,9 +33,11 @@ public class CameraXActivity extends AppCompatActivity {
     private PreviewView previewView;
     private ImageCapture imageCapture;
     private Button btnCapture;
+    private Button btnUploadFromLibrary;
     private ImageButton backButton;
 
     private ActivityResultLauncher<Intent> postPreviewLauncher;
+    private ActivityResultLauncher<Intent> mediaPickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +46,7 @@ public class CameraXActivity extends AppCompatActivity {
 
         previewView = findViewById(R.id.previewView);
         btnCapture = findViewById(R.id.btnCapture);
+        btnUploadFromLibrary = findViewById(R.id.btnUploadFromLibrary);
         backButton = findViewById(R.id.backButton);
 
         backButton.setOnClickListener(v -> finish());
@@ -51,6 +54,11 @@ public class CameraXActivity extends AppCompatActivity {
         startCamera();
 
         btnCapture.setOnClickListener(v -> takePhoto());
+
+        btnUploadFromLibrary.setOnClickListener(v -> {
+            Intent intent = new Intent(CameraXActivity.this, MediaPickerActivity.class);
+            mediaPickerLauncher.launch(intent);
+        });
 
 
         postPreviewLauncher = registerForActivityResult(
@@ -63,6 +71,19 @@ public class CameraXActivity extends AppCompatActivity {
                             setResult(Activity.RESULT_OK, data);
                         }
                         // Close CameraXActivity
+                        finish();
+                    }
+                }
+        );
+
+        mediaPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null) {
+                            setResult(Activity.RESULT_OK, data);
+                        }
                         finish();
                     }
                 }
