@@ -92,6 +92,11 @@
     <string name="bright">Bright</string>
     <string name="cool">Cool</string>
     <string name="reset">Reset</string>
+    <string name="upload_from_library">Upload</string>
+    <string name="media_picker_title">Upload from Library</string>
+    <string name="selected_media_preview">Selected media preview</string>
+    <string name="choose_from_library">Choose from library</string>
+    <string name="no_media_selected">Please choose a photo to continue.</string>
 
 
 </resources>

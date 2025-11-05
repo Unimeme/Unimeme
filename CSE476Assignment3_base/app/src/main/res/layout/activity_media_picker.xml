@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MediaPickerActivity">
+
+    <TextView
+        android:id="@+id/mediaPickerTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/media_picker_title"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageView
+        android:id="@+id/selectedImagePreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:contentDescription="@string/selected_media_preview"
+        android:background="@drawable/preview_border"
+        android:scaleType="centerCrop"
+        app:layout_constraintTop_toBottomOf="@id/mediaPickerTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/buttonContainer" />
+
+    <LinearLayout
+        android:id="@+id/buttonContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/selectedImagePreview"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/btnChooseFromLibrary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_from_library"
+            android:textAllCaps="false"
+            android:backgroundTint="#FF9800"
+            android:textColor="@android:color/white" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="16dp" />
+
+        <Button
+            android:id="@+id/btnContinueUpload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/continue_next"
+            android:enabled="false"
+            android:textAllCaps="false"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="8dp" />
+
+        <Button
+            android:id="@+id/btnCancelUpload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/cancel"
+            android:textAllCaps="false"
+            android:backgroundTint="#9E9E9E"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
