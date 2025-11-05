@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 // The following code is written based on YouTube videos I watched
 // ChatGPT was used to beautify code and add comments in places they were not in already
+// change for testing merge in git repo
+
 public class AccountActivity extends AppCompatActivity {
 
     // Declare UI elements and shared preferences
