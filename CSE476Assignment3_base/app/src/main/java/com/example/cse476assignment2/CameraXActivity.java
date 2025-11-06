@@ -33,11 +33,9 @@ public class CameraXActivity extends AppCompatActivity {
     private PreviewView previewView;
     private ImageCapture imageCapture;
     private Button btnCapture;
-    private Button btnUploadFromLibrary;
     private ImageButton backButton;
 
     private ActivityResultLauncher<Intent> postPreviewLauncher;
-    private ActivityResultLauncher<String> galleryLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +44,6 @@ public class CameraXActivity extends AppCompatActivity {
 
         previewView = findViewById(R.id.previewView);
         btnCapture = findViewById(R.id.btnCapture);
-        btnUploadFromLibrary = findViewById(R.id.btnUploadFromLibrary);
         backButton = findViewById(R.id.backButton);
 
         backButton.setOnClickListener(v -> finish());
@@ -54,8 +51,6 @@ public class CameraXActivity extends AppCompatActivity {
         startCamera();
 
         btnCapture.setOnClickListener(v -> takePhoto());
-
-        btnUploadFromLibrary.setOnClickListener(v -> galleryLauncher.launch("image/*"));
 
 
         postPreviewLauncher = registerForActivityResult(
@@ -69,17 +64,6 @@ public class CameraXActivity extends AppCompatActivity {
                         }
                         // Close CameraXActivity
                         finish();
-                    }
-                }
-        );
-
-        galleryLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        Intent intent = new Intent(CameraXActivity.this, PostPreviewActivity.class);
-                        intent.putExtra("photoUri", uri.toString());
-                        postPreviewLauncher.launch(intent);
                     }
                 }
         );

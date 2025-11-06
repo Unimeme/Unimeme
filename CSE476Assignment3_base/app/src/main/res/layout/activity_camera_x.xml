@@ -64,19 +64,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <Button
-        android:id="@+id/btnUploadFromLibrary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/upload_from_library"
-        android:textAllCaps="false"
-        android:backgroundTint="#FF9800"
-        android:textColor="@android:color/white"
-        android:layout_marginStart="24dp"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <!-- Post button (shown after photo + caption ready) -->
     <Button
         android:id="@+id/btnPost"
