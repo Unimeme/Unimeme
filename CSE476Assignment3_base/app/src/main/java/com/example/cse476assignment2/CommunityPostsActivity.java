@@ -3,6 +3,7 @@ package com.example.cse476assignment2;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -45,6 +46,8 @@ public class CommunityPostsActivity extends AppCompatActivity {
 
     private static final int REQUEST_CAMERA_PERMISSION = 100;
     private static final int REQUEST_LOCATION_PERMISSION = 101;
+    private static final String USER_PREFS = "USER_PREFS";
+    private static final String KEY_LOCATION_TRACKING = "LOCATION_TRACKING";
 
     private static final List<Post> userPosts = new ArrayList<>();
 
@@ -161,6 +164,11 @@ public class CommunityPostsActivity extends AppCompatActivity {
 
         pendingCaption = captionInput.getText().toString();
 
+        if (!isLocationAccessEnabled()) {
+            completePendingPost("");
+            return;
+        }
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             fetchLocationAndPublish();
@@ -252,6 +260,10 @@ public class CommunityPostsActivity extends AppCompatActivity {
                 }
             }
         } else if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (!isLocationAccessEnabled()) {
+                completePendingPost("");
+                return;
+            }
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 fetchLocationAndPublish();
             } else {
@@ -315,6 +327,11 @@ public class CommunityPostsActivity extends AppCompatActivity {
     }
 
     private void fetchLocationAndPublish() {
+        if (!isLocationAccessEnabled()) {
+            completePendingPost("");
+            return;
+        }
+
         CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationTokenSource.getToken())
                 .addOnSuccessListener(location -> {
@@ -328,6 +345,11 @@ public class CommunityPostsActivity extends AppCompatActivity {
     }
 
     private void fetchLastKnownLocation() {
+        if (!isLocationAccessEnabled()) {
+            completePendingPost("");
+            return;
+        }
+
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(lastLocation -> {
                     if (lastLocation != null) {
@@ -345,6 +367,11 @@ public class CommunityPostsActivity extends AppCompatActivity {
                 location.getLatitude(),
                 location.getLongitude()
         );
+    }
+
+    private boolean isLocationAccessEnabled() {
+        SharedPreferences sharedPreferences = getSharedPreferences(USER_PREFS, MODE_PRIVATE);
+        return sharedPreferences.getBoolean(KEY_LOCATION_TRACKING, false);
     }
 
     private void completePendingPost(String locationText) {
