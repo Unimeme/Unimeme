@@ -54,6 +54,18 @@
             android:textSize="14sp"
             android:textColor="@android:color/black" />
 
+        <!-- NEW: Hashtags TextView -->
+        <TextView
+            android:id="@+id/postHashtags"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="8dp"
+            android:textColor="@android:color/holo_blue_dark"
+            android:textSize="14sp"
+            android:visibility="gone"/>
+
         <TextView
             android:id="@+id/postLikes"
             android:layout_width="wrap_content"
@@ -63,7 +75,7 @@
             android:textColor="@android:color/darker_gray"
             android:textStyle="bold" />
 
-        <!-- UPDATED: Container for action buttons -->
+        <!-- Container for action buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -88,9 +100,6 @@
                 android:contentDescription="View comments"
                 android:src="@android:drawable/stat_notify_chat"
                 app:tint="@android:color/darker_gray" />
-
         </LinearLayout>
-
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

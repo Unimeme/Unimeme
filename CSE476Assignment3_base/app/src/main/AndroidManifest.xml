@@ -35,9 +35,8 @@
         <activity android:name=".CommunityPostsActivity" />
         <activity android:name=".CameraXActivity" />
         <activity android:name=".PostPreviewActivity" />
-
-        <!-- NEW: Add the CommentsActivity -->
         <activity android:name=".CommentsActivity" />
+        <activity android:name=".HashtagPostsActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

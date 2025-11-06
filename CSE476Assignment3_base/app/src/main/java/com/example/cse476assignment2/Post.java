@@ -19,9 +19,10 @@ public class Post implements Serializable {
     private final long createdAt;
     private int likeCount;
     private final List<Comment> commentObjects;
-
-    // NEW: Track if the current user has liked this post
     private boolean isLikedByCurrentUser = false;
+
+    // NEW: Add a list to hold hashtags
+    private List<String> hashtags;
 
     public Post(Uri imageUri, String caption, String author, String location) {
         this(imageUri, caption, author, location, 0, System.currentTimeMillis());
@@ -41,6 +42,7 @@ public class Post implements Serializable {
         this.likeCount = likeCount;
         this.createdAt = createdAt;
         this.commentObjects = new ArrayList<>();
+        this.hashtags = new ArrayList<>(); // Initialize the list
     }
 
     public Post(@DrawableRes int imageResId, String caption, String author, String location, int likeCount, long createdAt) {
@@ -53,6 +55,7 @@ public class Post implements Serializable {
         this.likeCount = likeCount;
         this.createdAt = createdAt;
         this.commentObjects = new ArrayList<>();
+        this.hashtags = new ArrayList<>(); // Initialize the list
     }
 
     public Uri getImageUri() { return imageUri; }
@@ -68,7 +71,6 @@ public class Post implements Serializable {
     public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
     public long getCreatedAt() { return createdAt; }
 
-    // --- NEW: Methods for post likes ---
     public boolean isLikedByCurrentUser() { return isLikedByCurrentUser; }
 
     public void toggleLike() {
@@ -79,4 +81,8 @@ public class Post implements Serializable {
         }
         isLikedByCurrentUser = !isLikedByCurrentUser;
     }
+
+    // --- NEW: Methods for hashtags ---
+    public List<String> getHashtags() { return hashtags; }
+    public void setHashtags(List<String> hashtags) { this.hashtags = hashtags; }
 }

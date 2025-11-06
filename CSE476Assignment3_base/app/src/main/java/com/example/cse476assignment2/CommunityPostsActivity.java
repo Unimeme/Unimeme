@@ -1,51 +1,28 @@
 // /app/src/main/java/com/example/cse476assignment2/CommunityPostsActivity.java
 package com.example.cse476assignment2;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.Toast;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
-import com.google.android.gms.tasks.CancellationTokenSource;
-
-import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-// UPDATED: Implement the new listener interface
 public class CommunityPostsActivity extends AppCompatActivity implements PostAdapter.OnPostInteractionListener {
 
     private final List<Post> userPosts = new ArrayList<>();
@@ -55,6 +32,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     private ActivityResultLauncher<Intent> cameraXLauncher;
     private ActivityResultLauncher<String> galleryLauncher;
     private ActivityResultLauncher<Intent> commentsLauncher;
+    private ActivityResultLauncher<Intent> postPreviewLauncher;
 
     private enum SortOption {
         MOST_RECENT,
@@ -104,7 +82,24 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         String photoPath = result.getData().getStringExtra("photoUri");
                         if (photoPath != null) {
-                            addPostToFeed(Uri.parse(photoPath), "", "");
+                            Intent previewIntent = new Intent(this, PostPreviewActivity.class);
+                            previewIntent.putExtra("photoUri", photoPath);
+                            postPreviewLauncher.launch(previewIntent);
+                        }
+                    }
+                }
+        );
+
+        postPreviewLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        String photoUri = result.getData().getStringExtra("photoUri");
+                        String caption = result.getData().getStringExtra("caption");
+                        ArrayList<String> hashtags = result.getData().getStringArrayListExtra("hashtags");
+
+                        if (photoUri != null) {
+                            addPostToFeed(Uri.parse(photoUri), caption, "", hashtags);
                         }
                     }
                 }
@@ -114,7 +109,9 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        addPostToFeed(uri, "", "");
+                        Intent previewIntent = new Intent(this, PostPreviewActivity.class);
+                        previewIntent.putExtra("photoUri", uri.toString());
+                        postPreviewLauncher.launch(previewIntent);
                     }
                 }
         );
@@ -142,12 +139,19 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         commentsLauncher.launch(intent);
     }
 
-    // NEW: Handle post like clicks (for persistence)
     @Override
     public void onLikeClick(int position) {
-        // The data is already changed in the 'userPosts' list.
-        // The onStop() method will handle saving it.
-        // We could add more logic here if needed, but for now, this is sufficient.
+        // Persistence is handled by onStop()
+    }
+
+    // --- NEW: Handle hashtag clicks ---
+    @Override
+    public void onHashtagClick(String hashtag) {
+        Intent intent = new Intent(this, HashtagPostsActivity.class);
+        intent.putExtra(HashtagPostsActivity.EXTRA_HASHTAG, hashtag);
+        // Pass the entire list of posts so the next activity can filter it
+        intent.putExtra(HashtagPostsActivity.EXTRA_ALL_POSTS, (Serializable) userPosts);
+        startActivity(intent);
     }
 
     private void setupSortSpinner(Spinner sortSpinner) {
@@ -166,8 +170,11 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         });
     }
 
-    private void addPostToFeed(Uri imageUri, String caption, String location) {
+    private void addPostToFeed(Uri imageUri, String caption, String location, List<String> hashtags) {
         Post newPost = new Post(imageUri, caption, getString(R.string.you_as_user), location);
+        if (hashtags != null) {
+            newPost.setHashtags(hashtags);
+        }
         userPosts.add(0, newPost);
         sortPostsAndRefresh();
     }
@@ -184,7 +191,6 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     private void ensureDefaultPosts() {
         if (!userPosts.isEmpty()) return;
         long now = System.currentTimeMillis();
-        // UPDATED: Add initial like counts to default posts
         userPosts.add(new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18)));
         userPosts.add(new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6)));
         userPosts.add(new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1)));
