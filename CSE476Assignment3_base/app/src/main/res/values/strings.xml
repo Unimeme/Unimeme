@@ -97,6 +97,15 @@
     <string name="selected_media_preview">Selected media preview</string>
     <string name="choose_from_library">Choose from library</string>
     <string name="no_media_selected">Please choose a photo to continue.</string>
+    <string name="add_post_title">Add a photo</string>
+    <string name="add_post_option_camera">Take Photo</string>
+    <string name="add_post_option_gallery">Choose from Gallery</string>
+    <string name="no_image_selected">Select an image before posting.</string>
+    <string name="post_success_message">Posted!</string>
+    <string name="camera_permission_denied">Camera permission denied</string>
+    <string name="camera_permission_needed_title">Camera Permission Needed</string>
+    <string name="camera_permission_needed_message">You’ve permanently denied camera access. Please enable it in Settings to take photos.</string>
+    <string name="open_settings">Open Settings</string>
 
 
 </resources>
