@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:padding="8dp"
+    android:gravity="center_vertical">
 
     <!-- Profile Picture -->
     <ImageView
@@ -16,6 +17,7 @@
         tools:src="@drawable/profile_icon"
         android:contentDescription="Comment author profile picture" />
 
+    <!-- Main content area for author and text -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -55,4 +57,48 @@
             tools:text="This is a really cool post! I love it." />
 
     </LinearLayout>
+
+    <!-- Like and Delete buttons area -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginStart="8dp">
+
+        <!-- NEW: Delete button -->
+        <ImageButton
+            android:id="@+id/btnDeleteComment"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_delete"
+            android:visibility="gone"
+            tools:visibility="visible"
+            android:contentDescription="Delete comment" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <ImageButton
+                android:id="@+id/btnLikeComment"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/btn_star_big_off"
+                android:contentDescription="Like comment" />
+
+            <TextView
+                android:id="@+id/tvCommentLikeCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                tools:text="12" />
+        </LinearLayout>
+
+    </LinearLayout>
+
 </LinearLayout>

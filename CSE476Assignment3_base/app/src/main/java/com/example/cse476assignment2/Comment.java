@@ -1,5 +1,4 @@
 // /app/src/main/java/com/example/cse476assignment2/Comment.java
-
 package com.example.cse476assignment2;
 
 import java.io.Serializable;
@@ -9,9 +8,11 @@ public class Comment implements Serializable {
     private final String author;
     private final String text;
     private final long timestamp;
-    // In a real app, this might be a URI to a profile picture.
-    // For now, we'll use a drawable resource ID as a placeholder.
     private final int authorProfileImageResId;
+
+    // NEW: Fields for likes
+    private int likeCount = 0;
+    private boolean isLikedByCurrentUser = false;
 
     public Comment(String author, String text, int authorProfileImageResId) {
         this.author = author;
@@ -20,19 +21,25 @@ public class Comment implements Serializable {
         this.authorProfileImageResId = authorProfileImageResId;
     }
 
-    public String getAuthor() {
-        return author;
-    }
+    public String getAuthor() { return author; }
+    public String getText() { return text; }
+    public long getTimestamp() { return timestamp; }
+    public int getAuthorProfileImageResId() { return authorProfileImageResId; }
 
-    public String getText() {
-        return text;
-    }
+    // NEW: Methods for likes
+    public int getLikeCount() { return likeCount; }
+    public boolean isLikedByCurrentUser() { return isLikedByCurrentUser; }
 
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public int getAuthorProfileImageResId() {
-        return authorProfileImageResId;
+    /**
+     * Toggles the like state. If not liked, it becomes liked and count increases.
+     * If already liked, it becomes un-liked and count decreases.
+     */
+    public void toggleLike() {
+        if (isLikedByCurrentUser) {
+            likeCount--;
+        } else {
+            likeCount++;
+        }
+        isLikedByCurrentUser = !isLikedByCurrentUser;
     }
 }
