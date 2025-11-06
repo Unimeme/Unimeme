@@ -16,23 +16,37 @@ public class Post implements Serializable {
     private final String author;
     private final List<String> comments;
     private final String location;
+    private final long createdAt;
+    private int likeCount;
 
     public Post(Uri imageUri, String caption, String author, String location) {
+        this(imageUri, caption, author, location, 0, System.currentTimeMillis());
+    }
+
+    public Post(@DrawableRes int imageResId, String caption, String author, String location) {
+        this(imageResId, caption, author, location, 0, System.currentTimeMillis());
+    }
+
+    public Post(Uri imageUri, String caption, String author, String location, int likeCount, long createdAt) {
         this.imageUri = imageUri;
         this.imageResId = null;
         this.caption = caption;
         this.author = author;
         this.location = location;
         this.comments = new ArrayList<>();
+        this.likeCount = likeCount;
+        this.createdAt = createdAt;
     }
 
-    public Post(@DrawableRes int imageResId, String caption, String author, String location) {
+    public Post(@DrawableRes int imageResId, String caption, String author, String location, int likeCount, long createdAt) {
         this.imageUri = null;
         this.imageResId = imageResId;
         this.caption = caption;
         this.author = author;
         this.location = location;
         this.comments = new ArrayList<>();
+        this.likeCount = likeCount;
+        this.createdAt = createdAt;
     }
 
     public Uri getImageUri() {
@@ -61,5 +75,17 @@ public class Post implements Serializable {
 
     public void addComment(String comment) {
         comments.add(0, comment);
+    }
+
+    public int getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
     }
 }

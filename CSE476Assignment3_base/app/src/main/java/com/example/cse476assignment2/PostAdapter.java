@@ -60,6 +60,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.captionView.setText(caption);
             holder.captionView.setVisibility(View.VISIBLE);
         }
+
+        holder.likesView.setText(holder.likesView.getContext().getString(R.string.likes_format, post.getLikeCount()));
     }
 
     @Override
@@ -72,6 +74,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         final TextView locationView;
         final ImageView imageView;
         final TextView captionView;
+        final TextView likesView;
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -79,6 +82,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             locationView = itemView.findViewById(R.id.postLocation);
             imageView = itemView.findViewById(R.id.postImage);
             captionView = itemView.findViewById(R.id.postCaption);
+            likesView = itemView.findViewById(R.id.postLikes);
         }
     }
 }
