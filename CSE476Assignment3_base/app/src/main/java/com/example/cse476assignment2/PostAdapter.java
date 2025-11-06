@@ -1,28 +1,30 @@
-// /app/src/main/java/com/example/cse476assignment2/PostAdapter.java
 package com.example.cse476assignment2;
 
-import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton; // Import ImageButton
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.List;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
-    private final List<Post> posts;
+    // --- NEW: Interface for handling clicks ---
+    public interface OnCommentClickListener {
+        void onCommentClick(Post post, int position);
+    }
 
-    public PostAdapter(List<Post> posts) {
+    private final List<Post> posts;
+    private final OnCommentClickListener commentClickListener; // NEW: Listener instance
+
+    public PostAdapter(List<Post> posts, OnCommentClickListener listener) { // NEW: Updated constructor
         this.posts = posts;
+        this.commentClickListener = listener;
     }
 
     @NonNull
@@ -36,15 +38,13 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
         Post post = posts.get(position);
 
-        // --- NEW: Set OnClickListener for the comment button ---
+        // --- UPDATED: Use the listener for the click event ---
         holder.btnComment.setOnClickListener(v -> {
-            Context context = holder.itemView.getContext();
-            Intent intent = new Intent(context, CommentsActivity.class);
-            // Pass the entire Post object to the CommentsActivity
-            intent.putExtra(CommentsActivity.EXTRA_POST, post);
-            context.startActivity(intent);
+            if (commentClickListener != null) {
+                commentClickListener.onCommentClick(post, position);
+            }
         });
-        // --- End of new OnClickListener setup ---
+        // --- End of updated OnClickListener setup ---
 
         holder.authorView.setText(post.getAuthor());
 
@@ -89,7 +89,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         final ImageView imageView;
         final TextView captionView;
         final TextView likesView;
-        final ImageButton btnComment; // NEW: Add the comment button
+        final ImageButton btnComment;
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -98,7 +98,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             imageView = itemView.findViewById(R.id.postImage);
             captionView = itemView.findViewById(R.id.postCaption);
             likesView = itemView.findViewById(R.id.postLikes);
-            btnComment = itemView.findViewById(R.id.btnComment); // NEW: Find the button by its ID
+            btnComment = itemView.findViewById(R.id.btnComment);
         }
     }
 }

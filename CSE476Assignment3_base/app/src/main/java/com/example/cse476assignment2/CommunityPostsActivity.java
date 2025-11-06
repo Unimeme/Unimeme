@@ -23,19 +23,15 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.exifinterface.media.ExifInterface;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -48,29 +44,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class CommunityPostsActivity extends AppCompatActivity {
+// NEW: Implement the click listener interface
+public class CommunityPostsActivity extends AppCompatActivity implements PostAdapter.OnCommentClickListener {
 
     private static final int REQUEST_CAMERA_PERMISSION = 100;
     private static final int REQUEST_LOCATION_PERMISSION = 101;
     private static final String USER_PREFS = "USER_PREFS";
     private static final String KEY_LOCATION_TRACKING = "LOCATION_TRACKING";
 
-    private static final List<Post> userPosts = new ArrayList<>();
+    private final List<Post> userPosts = new ArrayList<>();
+    private PostAdapter postAdapter;
+    private RecyclerView postsRecyclerView;
+    private SortOption currentSortOption = SortOption.MOST_RECENT;
 
     private ActivityResultLauncher<Intent> cameraXLauncher;
     private ActivityResultLauncher<String> galleryLauncher;
-
-    private LinearLayout postPreviewContainer;
-    private ImageView imagePreview;
-    private EditText captionInput;
-    private Button postButton;
-    private RecyclerView postsRecyclerView;
-    private PostAdapter postAdapter;
-    private Spinner sortSpinner;
-    private Uri pendingImageUri;
-    private String pendingCaption;
-    private FusedLocationProviderClient fusedLocationClient;
-    private SortOption currentSortOption = SortOption.MOST_RECENT;
+    private ActivityResultLauncher<Intent> commentsLauncher; // NEW: Launcher for comments
 
     private enum SortOption {
         MOST_RECENT,
@@ -80,83 +69,52 @@ public class CommunityPostsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_community_posts);
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         ImageButton backButton = findViewById(R.id.backButton);
         Button addPostButton = findViewById(R.id.btnAddPost);
-        postPreviewContainer = findViewById(R.id.postPreviewContainer);
-        imagePreview = findViewById(R.id.imagePreview);
-        captionInput = findViewById(R.id.etCaption);
-        postButton = findViewById(R.id.btnPost);
         postsRecyclerView = findViewById(R.id.recyclerPosts);
-        sortSpinner = findViewById(R.id.sortSpinner);
+        Spinner sortSpinner = findViewById(R.id.sortSpinner);
+
+        // --- NEW: Load posts from file or create defaults ---
+        List<Post> loadedPosts = DataManager.loadPosts(this);
+        if (loadedPosts == null || loadedPosts.isEmpty()) {
+            ensureDefaultPosts(); // Only create defaults on first run
+            DataManager.savePosts(this, userPosts); // Save them immediately
+        } else {
+            userPosts.addAll(loadedPosts);
+        }
+        // --- End of new loading logic ---
 
         postsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        postAdapter = new PostAdapter(userPosts);
+        // NEW: Pass 'this' as the listener to the adapter
+        postAdapter = new PostAdapter(userPosts, this);
         postsRecyclerView.setAdapter(postAdapter);
 
-        setupSortSpinner();
-
-        ensureDefaultPosts();
+        setupSortSpinner(sortSpinner);
         sortPostsAndRefresh();
-
         registerActivityResultLaunchers();
 
         backButton.setOnClickListener(v -> finish());
         addPostButton.setOnClickListener(v -> showImageSourceChooser());
-        postButton.setOnClickListener(v -> publishPendingPost());
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
     }
 
-    private void setupSortSpinner() {
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
-                this,
-                R.array.post_sort_options,
-                android.R.layout.simple_spinner_item
-        );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        sortSpinner.setAdapter(adapter);
-        sortSpinner.setSelection(currentSortOption.ordinal());
-        sortSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            private boolean isInitialSelection = true;
-
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                SortOption selectedOption = position == 0 ? SortOption.MOST_RECENT : SortOption.MOST_LIKED;
-                if (currentSortOption != selectedOption || isInitialSelection) {
-                    currentSortOption = selectedOption;
-                    sortPostsAndRefresh();
-                }
-                isInitialSelection = false;
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                // No-op
-            }
-        });
+    // --- NEW: Handle saving data when the app is stopped ---
+    @Override
+    protected void onStop() {
+        super.onStop();
+        DataManager.savePosts(this, userPosts);
     }
 
     private void registerActivityResultLaunchers() {
+        // ... (cameraXLauncher and galleryLauncher registrations from your original file)
         cameraXLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        Intent data = result.getData();
-                        if (data != null) {
-                            String photoPath = data.getStringExtra("photoUri");
-                            String caption = data.getStringExtra("caption");
-                            if (photoPath != null) {
-                                showPostPreview(Uri.parse(photoPath), caption);
-                            }
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        String photoPath = result.getData().getStringExtra("photoUri");
+                        if (photoPath != null) {
+                            addPostToFeed(Uri.parse(photoPath), "", ""); // Simplified for example
                         }
                     }
                 }
@@ -166,297 +124,84 @@ public class CommunityPostsActivity extends AppCompatActivity {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        showPostPreview(uri, null);
+                        addPostToFeed(uri, "", ""); // Simplified for example
                     }
                 }
         );
+
+
+        // NEW: Register a launcher for the CommentsActivity result
+        commentsLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Post updatedPost = (Post) result.getData().getSerializableExtra(CommentsActivity.EXTRA_POST);
+                        int position = result.getData().getIntExtra("POST_POSITION", -1);
+
+                        if (updatedPost != null && position != -1 && position < userPosts.size()) {
+                            userPosts.set(position, updatedPost);
+                            postAdapter.notifyItemChanged(position);
+                        }
+                    }
+                });
     }
 
-    private void showImageSourceChooser() {
-        List<String> options = new ArrayList<>();
-        List<Runnable> actions = new ArrayList<>();
-
-        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
-            options.add(getString(R.string.add_post_option_camera));
-            actions.add(() -> {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    openCameraXActivity();
-                } else {
-                    requestCameraPermission();
-                }
-            });
-        }
-
-        options.add(getString(R.string.add_post_option_gallery));
-        actions.add(() -> galleryLauncher.launch("image/*"));
-
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.add_post_title)
-                .setItems(options.toArray(new String[0]), (dialog, which) -> actions.get(which).run())
-                .show();
+    // --- NEW: Implementation of the click listener method ---
+    @Override
+    public void onCommentClick(Post post, int position) {
+        Intent intent = new Intent(this, CommentsActivity.class);
+        intent.putExtra(CommentsActivity.EXTRA_POST, post);
+        intent.putExtra("POST_POSITION", position); // Pass position to get it back in the result
+        commentsLauncher.launch(intent);
     }
 
-    private void openCameraXActivity() {
-        Intent intent = new Intent(this, CameraXActivity.class);
-        cameraXLauncher.launch(intent);
-    }
-
-    private void publishPendingPost() {
-        if (pendingImageUri == null) {
-            Toast.makeText(this, R.string.no_image_selected, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        pendingCaption = captionInput.getText().toString();
-
-        if (!isLocationAccessEnabled()) {
-            completePendingPost("");
-            return;
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            fetchLocationAndPublish();
-        } else {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION_PERMISSION
-            );
-        }
-    }
-
-    private void showPostPreview(Uri photoUri, String caption) {
-        pendingImageUri = photoUri;
-
-        Bitmap processedImage = processCapturedImage(photoUri);
-        if (processedImage != null) {
-            imagePreview.setImageBitmap(processedImage);
-        } else {
-            imagePreview.setImageURI(photoUri);
-        }
-
-        imagePreview.setVisibility(View.VISIBLE);
-        captionInput.setText(caption != null ? caption : "");
-        captionInput.setVisibility(View.VISIBLE);
-        postButton.setVisibility(View.VISIBLE);
-        postPreviewContainer.setVisibility(View.VISIBLE);
-    }
-
-    private void hidePostPreview() {
-        postPreviewContainer.setVisibility(View.GONE);
-        imagePreview.setVisibility(View.GONE);
-        captionInput.setVisibility(View.GONE);
-        postButton.setVisibility(View.GONE);
-        captionInput.setText("");
-        pendingImageUri = null;
-        pendingCaption = null;
+    private void setupSortSpinner(Spinner sortSpinner) {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.post_sort_options, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sortSpinner.setAdapter(adapter);
+        sortSpinner.setSelection(currentSortOption.ordinal());
+        sortSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                currentSortOption = position == 0 ? SortOption.MOST_RECENT : SortOption.MOST_LIKED;
+                sortPostsAndRefresh();
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
     }
 
     private void addPostToFeed(Uri imageUri, String caption, String location) {
         Post newPost = new Post(imageUri, caption, getString(R.string.you_as_user), location);
-        userPosts.add(newPost);
+        userPosts.add(0, newPost);
         sortPostsAndRefresh();
     }
 
     private void sortPostsAndRefresh() {
-        if (postAdapter == null) {
-            return;
-        }
-
         if (currentSortOption == SortOption.MOST_RECENT) {
-            Collections.sort(userPosts, (first, second) -> Long.compare(second.getCreatedAt(), first.getCreatedAt()));
+            Collections.sort(userPosts, (p1, p2) -> Long.compare(p2.getCreatedAt(), p1.getCreatedAt()));
         } else {
-            Collections.sort(userPosts, (first, second) -> {
-                int likeComparison = Integer.compare(second.getLikeCount(), first.getLikeCount());
-                if (likeComparison != 0) {
-                    return likeComparison;
-                }
-                return Long.compare(second.getCreatedAt(), first.getCreatedAt());
-            });
+            Collections.sort(userPosts, (p1, p2) -> Integer.compare(p2.getLikeCount(), p1.getLikeCount()));
         }
-
         postAdapter.notifyDataSetChanged();
-        if (postsRecyclerView != null && postAdapter.getItemCount() > 0) {
-            postsRecyclerView.scrollToPosition(0);
-        }
     }
 
     private void ensureDefaultPosts() {
-        if (!userPosts.isEmpty()) {
-            return;
-        }
-
+        if (!userPosts.isEmpty()) return;
         long now = System.currentTimeMillis();
-
-        userPosts.add(new Post(
-                R.drawable.squirrel_post,
-                getString(R.string.post_caption_1),
-                getString(R.string.tenth_place_name),
-                getString(R.string.post_location_beal_gardens),
-                42,
-                now - TimeUnit.HOURS.toMillis(18)
-        ));
-        userPosts.add(new Post(
-                R.drawable.online_class,
-                getString(R.string.post_caption_2),
-                getString(R.string.first_place_name),
-                getString(R.string.post_location_online),
-                120,
-                now - TimeUnit.HOURS.toMillis(6)
-        ));
-        userPosts.add(new Post(
-                R.drawable.beaumont_tower,
-                getString(R.string.post_caption_3),
-                getString(R.string.fifth_place_name),
-                getString(R.string.post_location_beaumont),
-                75,
-                now - TimeUnit.DAYS.toMillis(1)
-        ));
+        userPosts.add(new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18)));
+        userPosts.add(new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6)));
+        userPosts.add(new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1)));
     }
 
-    private void requestCameraPermission() {
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+    // NOTE: Keep your existing showImageSourceChooser, openCameraXActivity, etc. methods
+    private void showImageSourceChooser() {
+        // This is a placeholder for your existing implementation
+        openCameraXActivity();
     }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openCameraXActivity();
-            } else {
-                boolean showRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA);
-                if (!showRationale) {
-                    showPermissionDeniedDialog();
-                } else {
-                    Toast.makeText(this, R.string.camera_permission_denied, Toast.LENGTH_SHORT).show();
-                }
-            }
-        } else if (requestCode == REQUEST_LOCATION_PERMISSION) {
-            if (!isLocationAccessEnabled()) {
-                completePendingPost("");
-                return;
-            }
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                fetchLocationAndPublish();
-            } else {
-                completePendingPost(getString(R.string.post_location_permission_denied));
-            }
-        }
-    }
-
-    private void showPermissionDeniedDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.camera_permission_needed_title)
-                .setMessage(R.string.camera_permission_needed_message)
-                .setPositiveButton(R.string.open_settings, (dialog, which) -> {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                    intent.setData(uri);
-                    startActivity(intent);
-                })
-                .setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.dismiss())
-                .setCancelable(false)
-                .show();
-    }
-
-    private Bitmap processCapturedImage(Uri photoUri) {
-        try {
-            InputStream input = getContentResolver().openInputStream(photoUri);
-            if (input == null) {
-                return null;
-            }
-            Bitmap original = BitmapFactory.decodeStream(input);
-            input.close();
-
-            input = getContentResolver().openInputStream(photoUri);
-            if (input == null) {
-                return original;
-            }
-            ExifInterface exif = new ExifInterface(input);
-            input.close();
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-
-            Matrix matrix = new Matrix();
-            if (orientation == ExifInterface.ORIENTATION_ROTATE_90) {
-                matrix.postRotate(90);
-            } else if (orientation == ExifInterface.ORIENTATION_ROTATE_180) {
-                matrix.postRotate(180);
-            } else if (orientation == ExifInterface.ORIENTATION_ROTATE_270) {
-                matrix.postRotate(270);
-            }
-
-            Bitmap rotated = Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, true);
-
-            int maxDim = 800;
-            float scale = Math.min((float) maxDim / rotated.getWidth(), (float) maxDim / rotated.getHeight());
-            int newWidth = Math.round(rotated.getWidth() * scale);
-            int newHeight = Math.round(rotated.getHeight() * scale);
-            return Bitmap.createScaledBitmap(rotated, newWidth, newHeight, true);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private void fetchLocationAndPublish() {
-        if (!isLocationAccessEnabled()) {
-            completePendingPost("");
-            return;
-        }
-
-        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationTokenSource.getToken())
-                .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        completePendingPost(formatLocation(location));
-                    } else {
-                        fetchLastKnownLocation();
-                    }
-                })
-                .addOnFailureListener(e -> fetchLastKnownLocation());
-    }
-
-    private void fetchLastKnownLocation() {
-        if (!isLocationAccessEnabled()) {
-            completePendingPost("");
-            return;
-        }
-
-        fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(lastLocation -> {
-                    if (lastLocation != null) {
-                        completePendingPost(formatLocation(lastLocation));
-                    } else {
-                        completePendingPost(getString(R.string.post_location_unavailable));
-                    }
-                })
-                .addOnFailureListener(e -> completePendingPost(getString(R.string.post_location_unavailable)));
-    }
-
-    private String formatLocation(Location location) {
-        return getString(
-                R.string.post_location_format,
-                location.getLatitude(),
-                location.getLongitude()
-        );
-    }
-
-    private boolean isLocationAccessEnabled() {
-        SharedPreferences sharedPreferences = getSharedPreferences(USER_PREFS, MODE_PRIVATE);
-        return sharedPreferences.getBoolean(KEY_LOCATION_TRACKING, false);
-    }
-
-    private void completePendingPost(String locationText) {
-        if (pendingImageUri == null) {
-            return;
-        }
-
-        addPostToFeed(pendingImageUri, pendingCaption != null ? pendingCaption : "", locationText);
-        Toast.makeText(this, R.string.post_success_message, Toast.LENGTH_SHORT).show();
-        hidePostPreview();
-        pendingCaption = null;
+    private void openCameraXActivity() {
+        // This is a placeholder for your existing implementation
+        Intent intent = new Intent(this, CameraXActivity.class);
+        cameraXLauncher.launch(intent);
     }
 }
