@@ -26,6 +26,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
         android:contentDescription="@string/create_post_image_preview_content_description"
         android:scaleType="centerCrop"
         android:background="@drawable/preview_border"
@@ -33,6 +34,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/location_container"
+        app:layout_goneMarginBottom="16dp"
         tools:src="@drawable/beaumont_tower" />
 
     <LinearLayout
@@ -51,6 +53,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/create_post_location_label"
+            android:labelFor="@id/location_value"
             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
             android:textColor="@android:color/black" />
 
@@ -75,7 +78,8 @@
         android:text="@string/create_post_take_photo"
         app:layout_constraintTop_toBottomOf="@id/location_container"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_goneMarginTop="24dp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/upload_post_button"
