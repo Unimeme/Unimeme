@@ -16,7 +16,7 @@ public class AccountActivity extends AppCompatActivity {
 
     // Declare UI elements and shared preferences
     TextView usernameTextView;
-    Button leaderboardButton, communitypostsButton, logoutButton;
+    Button leaderboardButton, communitypostsButton, logoutButton, accountSettingsButton;
     SharedPreferences sharedPreferences;
 
     @Override
@@ -29,6 +29,7 @@ public class AccountActivity extends AppCompatActivity {
         leaderboardButton = findViewById(R.id.button4);
         communitypostsButton = findViewById(R.id.buttonCommunityPosts);
         logoutButton = findViewById(R.id.logoutButton);
+        accountSettingsButton = findViewById(R.id.buttonAccountSettings);
 
         // Initialize SharedPreferences (used for saving login state)
         sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
@@ -48,6 +49,7 @@ public class AccountActivity extends AppCompatActivity {
         leaderboardButton.setText(R.string.go_to_leaderboard);
         communitypostsButton.setText(R.string.go_to_community_posts);
         logoutButton.setText(R.string.logout);
+        accountSettingsButton.setText(R.string.account_settings_btn);
 
         // Handle "Go to Leaderboard" button click
         leaderboardButton.setOnClickListener(v -> {
@@ -61,7 +63,11 @@ public class AccountActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-
+        // Handle "Account Settings" button click
+        accountSettingsButton.setOnClickListener(v -> {
+            Intent intent = new Intent(AccountActivity.this, PreferencesActivity.class);
+            startActivity(intent);
+        });
 
         // Handle "Logout" button click
         logoutButton.setOnClickListener(v -> {
