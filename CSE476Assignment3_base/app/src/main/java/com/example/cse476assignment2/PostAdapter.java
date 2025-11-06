@@ -34,6 +34,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         holder.authorView.setText(post.getAuthor());
 
+        String location = post.getLocation();
+        if (TextUtils.isEmpty(location)) {
+            holder.locationView.setVisibility(View.GONE);
+        } else {
+            holder.locationView.setText(location);
+            holder.locationView.setVisibility(View.VISIBLE);
+        }
+
         if (post.getImageResId() != null) {
             holder.imageView.setImageResource(post.getImageResId());
         } else {
@@ -61,12 +69,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
     static class PostViewHolder extends RecyclerView.ViewHolder {
         final TextView authorView;
+        final TextView locationView;
         final ImageView imageView;
         final TextView captionView;
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
             authorView = itemView.findViewById(R.id.postAuthor);
+            locationView = itemView.findViewById(R.id.postLocation);
             imageView = itemView.findViewById(R.id.postImage);
             captionView = itemView.findViewById(R.id.postCaption);
         }

@@ -15,20 +15,23 @@ public class Post implements Serializable {
     private final String caption;
     private final String author;
     private final List<String> comments;
+    private final String location;
 
-    public Post(Uri imageUri, String caption, String author) {
+    public Post(Uri imageUri, String caption, String author, String location) {
         this.imageUri = imageUri;
         this.imageResId = null;
         this.caption = caption;
         this.author = author;
+        this.location = location;
         this.comments = new ArrayList<>();
     }
 
-    public Post(@DrawableRes int imageResId, String caption, String author) {
+    public Post(@DrawableRes int imageResId, String caption, String author, String location) {
         this.imageUri = null;
         this.imageResId = imageResId;
         this.caption = caption;
         this.author = author;
+        this.location = location;
         this.comments = new ArrayList<>();
     }
 
@@ -46,6 +49,10 @@ public class Post implements Serializable {
 
     public String getAuthor() {
         return author;
+    }
+
+    public String getLocation() {
+        return location;
     }
 
     public List<String> getComments() {

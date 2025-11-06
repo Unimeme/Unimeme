@@ -78,6 +78,12 @@
     <string name="post_caption_2">Average 8am lecture be like</string>
 <!--    <string name="post_author_3">Post author 3</string>-->
     <string name="post_caption_3">Just hanging out at Beaumont Tower</string>
+    <string name="post_location_format">📍 %.5f, %.5f</string>
+    <string name="post_location_unavailable">📍 Location unavailable</string>
+    <string name="post_location_permission_denied">📍 Location permission denied</string>
+    <string name="post_location_beal_gardens">📍 Beal Botanical Garden</string>
+    <string name="post_location_online">📍 Virtual Classroom</string>
+    <string name="post_location_beaumont">📍 Beaumont Tower</string>
 
     <string name="button_daily_challenge">Daily Challenge</string>
     <string name="button_add_post">Add Post</string>

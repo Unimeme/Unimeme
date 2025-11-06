@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -31,13 +32,19 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.exifinterface.media.ExifInterface;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.CancellationTokenSource;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CommunityPostsActivity extends AppCompatActivity {
 
-    private static final int REQUEST_PERMISSION = 100;
+    private static final int REQUEST_CAMERA_PERMISSION = 100;
+    private static final int REQUEST_LOCATION_PERMISSION = 101;
 
     private static final List<Post> userPosts = new ArrayList<>();
 
@@ -51,12 +58,16 @@ public class CommunityPostsActivity extends AppCompatActivity {
     private RecyclerView postsRecyclerView;
     private PostAdapter postAdapter;
     private Uri pendingImageUri;
+    private String pendingCaption;
+    private FusedLocationProviderClient fusedLocationClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_community_posts);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         ImageButton backButton = findViewById(R.id.backButton);
         Button addPostButton = findViewById(R.id.btnAddPost);
@@ -148,10 +159,18 @@ public class CommunityPostsActivity extends AppCompatActivity {
             return;
         }
 
-        String caption = captionInput.getText().toString();
-        addPostToFeed(pendingImageUri, caption);
-        Toast.makeText(this, R.string.post_success_message, Toast.LENGTH_SHORT).show();
-        hidePostPreview();
+        pendingCaption = captionInput.getText().toString();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            fetchLocationAndPublish();
+        } else {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_LOCATION_PERMISSION
+            );
+        }
     }
 
     private void showPostPreview(Uri photoUri, String caption) {
@@ -178,10 +197,11 @@ public class CommunityPostsActivity extends AppCompatActivity {
         postButton.setVisibility(View.GONE);
         captionInput.setText("");
         pendingImageUri = null;
+        pendingCaption = null;
     }
 
-    private void addPostToFeed(Uri imageUri, String caption) {
-        Post newPost = new Post(imageUri, caption, getString(R.string.you_as_user));
+    private void addPostToFeed(Uri imageUri, String caption, String location) {
+        Post newPost = new Post(imageUri, caption, getString(R.string.you_as_user), location);
         userPosts.add(0, newPost);
         postAdapter.notifyItemInserted(0);
         postsRecyclerView.scrollToPosition(0);
@@ -192,20 +212,35 @@ public class CommunityPostsActivity extends AppCompatActivity {
             return;
         }
 
-        userPosts.add(new Post(R.drawable.squirrel_post, getString(R.string.post_caption_1), getString(R.string.tenth_place_name)));
-        userPosts.add(new Post(R.drawable.online_class, getString(R.string.post_caption_2), getString(R.string.first_place_name)));
-        userPosts.add(new Post(R.drawable.beaumont_tower, getString(R.string.post_caption_3), getString(R.string.fifth_place_name)));
+        userPosts.add(new Post(
+                R.drawable.squirrel_post,
+                getString(R.string.post_caption_1),
+                getString(R.string.tenth_place_name),
+                getString(R.string.post_location_beal_gardens)
+        ));
+        userPosts.add(new Post(
+                R.drawable.online_class,
+                getString(R.string.post_caption_2),
+                getString(R.string.first_place_name),
+                getString(R.string.post_location_online)
+        ));
+        userPosts.add(new Post(
+                R.drawable.beaumont_tower,
+                getString(R.string.post_caption_3),
+                getString(R.string.fifth_place_name),
+                getString(R.string.post_location_beaumont)
+        ));
     }
 
     private void requestCameraPermission() {
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_PERMISSION);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == REQUEST_PERMISSION) {
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 openCameraXActivity();
             } else {
@@ -215,6 +250,12 @@ public class CommunityPostsActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(this, R.string.camera_permission_denied, Toast.LENGTH_SHORT).show();
                 }
+            }
+        } else if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                fetchLocationAndPublish();
+            } else {
+                completePendingPost(getString(R.string.post_location_permission_denied));
             }
         }
     }
@@ -271,5 +312,49 @@ public class CommunityPostsActivity extends AppCompatActivity {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private void fetchLocationAndPublish() {
+        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationTokenSource.getToken())
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        completePendingPost(formatLocation(location));
+                    } else {
+                        fetchLastKnownLocation();
+                    }
+                })
+                .addOnFailureListener(e -> fetchLastKnownLocation());
+    }
+
+    private void fetchLastKnownLocation() {
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(lastLocation -> {
+                    if (lastLocation != null) {
+                        completePendingPost(formatLocation(lastLocation));
+                    } else {
+                        completePendingPost(getString(R.string.post_location_unavailable));
+                    }
+                })
+                .addOnFailureListener(e -> completePendingPost(getString(R.string.post_location_unavailable)));
+    }
+
+    private String formatLocation(Location location) {
+        return getString(
+                R.string.post_location_format,
+                location.getLatitude(),
+                location.getLongitude()
+        );
+    }
+
+    private void completePendingPost(String locationText) {
+        if (pendingImageUri == null) {
+            return;
+        }
+
+        addPostToFeed(pendingImageUri, pendingCaption != null ? pendingCaption : "", locationText);
+        Toast.makeText(this, R.string.post_success_message, Toast.LENGTH_SHORT).show();
+        hidePostPreview();
+        pendingCaption = null;
     }
 }
