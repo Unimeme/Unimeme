@@ -20,6 +20,13 @@
     <string name="leaderboard_btn">Leaderboard</string>
     <string name="achievements_btn">Achievements</string>
 
+    <string name="preferences_title">Account Preferences</string>
+    <string name="bio_label">Bio</string>
+    <string name="bio_hint">Tell others about yourself</string>
+    <string name="location_tracking">Enable location tracking</string>
+    <string name="save_preferences">Save preferences</string>
+    <string name="preferences_saved">Preferences saved</string>
+
     <!-- <string name="first_place">1</string> -->
     <!-- <string name="second_place">2</string> -->
     <!-- <string name="third_place">3</string> -->
