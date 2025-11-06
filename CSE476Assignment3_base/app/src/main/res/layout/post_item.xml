@@ -63,7 +63,28 @@
             android:textColor="@android:color/darker_gray"
             android:textStyle="bold" />
 
-    </LinearLayout>
+        <!-- NEW: Container for action buttons like comments -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="4dp">
 
+            <ImageButton
+                android:id="@+id/btnComment"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="View comments"
+                android:src="@android:drawable/stat_notify_chat"
+                app:tint="@android:color/darker_gray" />
+
+            <!-- You can add other buttons like 'like' or 'share' here later -->
+
+        </LinearLayout>
+
+    </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
