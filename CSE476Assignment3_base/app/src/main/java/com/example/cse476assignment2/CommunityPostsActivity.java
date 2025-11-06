@@ -141,15 +141,12 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
     @Override
     public void onLikeClick(int position) {
-        // Persistence is handled by onStop()
     }
 
-    // --- NEW: Handle hashtag clicks ---
     @Override
     public void onHashtagClick(String hashtag) {
         Intent intent = new Intent(this, HashtagPostsActivity.class);
         intent.putExtra(HashtagPostsActivity.EXTRA_HASHTAG, hashtag);
-        // Pass the entire list of posts so the next activity can filter it
         intent.putExtra(HashtagPostsActivity.EXTRA_ALL_POSTS, (Serializable) userPosts);
         startActivity(intent);
     }
@@ -191,9 +188,30 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     private void ensureDefaultPosts() {
         if (!userPosts.isEmpty()) return;
         long now = System.currentTimeMillis();
-        userPosts.add(new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18)));
-        userPosts.add(new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6)));
-        userPosts.add(new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1)));
+
+        Post squirrelPost = new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18));
+        ArrayList<String> squirrelTags = new ArrayList<>();
+        squirrelTags.add("campuslife");
+        squirrelTags.add("squirrels");
+        squirrelTags.add("cute");
+        squirrelPost.setHashtags(squirrelTags);
+        userPosts.add(squirrelPost);
+
+        Post studyPost = new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6));
+        ArrayList<String> studyTags = new ArrayList<>();
+        studyTags.add("studygrind");
+        studyTags.add("finals");
+        studyTags.add("latenight");
+        studyPost.setHashtags(studyTags);
+        userPosts.add(studyPost);
+
+        Post towerPost = new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1));
+        ArrayList<String> towerTags = new ArrayList<>();
+        towerTags.add("gogreen");
+        towerTags.add("msu");
+        towerTags.add("spartans");
+        towerPost.setHashtags(towerTags);
+        userPosts.add(towerPost);
     }
 
     private void showImageSourceChooser() {

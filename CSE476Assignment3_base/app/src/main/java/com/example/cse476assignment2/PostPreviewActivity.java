@@ -30,11 +30,10 @@ public class PostPreviewActivity extends AppCompatActivity {
     private EditText captionInput;
     private Button btnContinue, btnCancel;
 
-    // NEW: EditTexts for hashtags
-    private EditText hashtagInput1, hashtagInput2, hashtagInput3;
+    private EditText hashtagInput;
 
-    private Bitmap originalBitmap; // The untouched image from camera
-    private Bitmap filteredBitmap; // holds the currently filtered bitmap
+    private Bitmap originalBitmap;
+    private Bitmap filteredBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,10 +45,7 @@ public class PostPreviewActivity extends AppCompatActivity {
         btnContinue = findViewById(R.id.btnContinue);
         btnCancel = findViewById(R.id.btnCancel);
 
-        // NEW: Find hashtag views
-        hashtagInput1 = findViewById(R.id.hashtagInput1);
-        hashtagInput2 = findViewById(R.id.hashtagInput2);
-        hashtagInput3 = findViewById(R.id.hashtagInput3);
+        hashtagInput = findViewById(R.id.hashtagInput);
 
         Button btnGrayscale = findViewById(R.id.btnGrayscale);
         Button btnSepia = findViewById(R.id.btnSepia);
@@ -94,20 +90,24 @@ public class PostPreviewActivity extends AppCompatActivity {
                 return;
             }
 
-            // NEW: Collect hashtags
             ArrayList<String> hashtags = new ArrayList<>();
-            String tag1 = hashtagInput1.getText().toString().trim().replace("#", "");
-            String tag2 = hashtagInput2.getText().toString().trim().replace("#", "");
-            String tag3 = hashtagInput3.getText().toString().trim().replace("#", "");
-
-            if (!tag1.isEmpty()) hashtags.add(tag1);
-            if (!tag2.isEmpty()) hashtags.add(tag2);
-            if (!tag3.isEmpty()) hashtags.add(tag3);
+            String rawHashtags = hashtagInput.getText().toString().trim();
+            if (!rawHashtags.isEmpty()) {
+                String[] tags = rawHashtags.split("\\s+");
+                for (String tag : tags) {
+                    if (hashtags.size() >= 3) {
+                        break;
+                    }
+                    if (tag.startsWith("#") && tag.length() > 1) {
+                        hashtags.add(tag.substring(1));
+                    }
+                }
+            }
 
             Intent resultIntent = new Intent();
             resultIntent.putExtra("photoUri", savedUri.toString());
             resultIntent.putExtra("caption", caption);
-            resultIntent.putExtra("hashtags", hashtags); // Add hashtags to the result
+            resultIntent.putExtra("hashtags", hashtags);
             setResult(RESULT_OK, resultIntent);
             finish();
         });
