@@ -1,3 +1,4 @@
+// /app/src/main/java/com/example/cse476assignment2/PostAdapter.java
 package com.example.cse476assignment2;
 
 import android.net.Uri;
@@ -14,17 +15,18 @@ import java.util.List;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
-    // --- NEW: Interface for handling clicks ---
-    public interface OnCommentClickListener {
+    // UPDATED: More general listener interface
+    public interface OnPostInteractionListener {
         void onCommentClick(Post post, int position);
+        void onLikeClick(int position); // NEW: For handling post likes
     }
 
     private final List<Post> posts;
-    private final OnCommentClickListener commentClickListener; // NEW: Listener instance
+    private final OnPostInteractionListener interactionListener;
 
-    public PostAdapter(List<Post> posts, OnCommentClickListener listener) { // NEW: Updated constructor
+    public PostAdapter(List<Post> posts, OnPostInteractionListener listener) {
         this.posts = posts;
-        this.commentClickListener = listener;
+        this.interactionListener = listener;
     }
 
     @NonNull
@@ -37,45 +39,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     @Override
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
         Post post = posts.get(position);
-
-        // --- UPDATED: Use the listener for the click event ---
-        holder.btnComment.setOnClickListener(v -> {
-            if (commentClickListener != null) {
-                commentClickListener.onCommentClick(post, position);
-            }
-        });
-        // --- End of updated OnClickListener setup ---
-
-        holder.authorView.setText(post.getAuthor());
-
-        String location = post.getLocation();
-        if (TextUtils.isEmpty(location)) {
-            holder.locationView.setVisibility(View.GONE);
-        } else {
-            holder.locationView.setText(location);
-            holder.locationView.setVisibility(View.VISIBLE);
-        }
-
-        if (post.getImageResId() != null) {
-            holder.imageView.setImageResource(post.getImageResId());
-        } else {
-            Uri imageUri = post.getImageUri();
-            if (imageUri != null) {
-                holder.imageView.setImageURI(imageUri);
-            } else {
-                holder.imageView.setImageDrawable(null);
-            }
-        }
-
-        String caption = post.getCaption();
-        if (TextUtils.isEmpty(caption)) {
-            holder.captionView.setVisibility(View.GONE);
-        } else {
-            holder.captionView.setText(caption);
-            holder.captionView.setVisibility(View.VISIBLE);
-        }
-
-        holder.likesView.setText(holder.itemView.getContext().getString(R.string.likes_format, post.getLikeCount()));
+        holder.bind(post, position, interactionListener);
     }
 
     @Override
@@ -90,6 +54,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         final TextView captionView;
         final TextView likesView;
         final ImageButton btnComment;
+        final ImageButton btnLikePost; // NEW
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -99,6 +64,48 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             captionView = itemView.findViewById(R.id.postCaption);
             likesView = itemView.findViewById(R.id.postLikes);
             btnComment = itemView.findViewById(R.id.btnComment);
+            btnLikePost = itemView.findViewById(R.id.btnLikePost); // NEW
+        }
+
+        public void bind(Post post, int position, OnPostInteractionListener listener) {
+            authorView.setText(post.getAuthor());
+            locationView.setText(post.getLocation());
+            locationView.setVisibility(TextUtils.isEmpty(post.getLocation()) ? View.GONE : View.VISIBLE);
+            captionView.setText(post.getCaption());
+            captionView.setVisibility(TextUtils.isEmpty(post.getCaption()) ? View.GONE : View.VISIBLE);
+
+            if (post.getImageResId() != null) {
+                imageView.setImageResource(post.getImageResId());
+            } else {
+                imageView.setImageURI(post.getImageUri());
+            }
+
+            // --- NEW: Post Like Logic ---
+            updateLikes(post);
+
+            btnLikePost.setOnClickListener(v -> {
+                post.toggleLike();
+                updateLikes(post);
+                if (listener != null) {
+                    listener.onLikeClick(position);
+                }
+            });
+            // --- End Post Like Logic ---
+
+            btnComment.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onCommentClick(post, position);
+                }
+            });
+        }
+
+        private void updateLikes(Post post) {
+            likesView.setText(itemView.getContext().getString(R.string.likes_format, post.getLikeCount()));
+            if (post.isLikedByCurrentUser()) {
+                btnLikePost.setImageResource(android.R.drawable.btn_star_big_on);
+            } else {
+                btnLikePost.setImageResource(android.R.drawable.btn_star_big_off);
+            }
         }
     }
 }

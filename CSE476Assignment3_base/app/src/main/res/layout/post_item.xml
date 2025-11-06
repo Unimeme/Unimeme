@@ -63,7 +63,7 @@
             android:textColor="@android:color/darker_gray"
             android:textStyle="bold" />
 
-        <!-- NEW: Container for action buttons like comments -->
+        <!-- UPDATED: Container for action buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -73,6 +73,14 @@
             android:paddingBottom="4dp">
 
             <ImageButton
+                android:id="@+id/btnLikePost"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Like post"
+                android:src="@android:drawable/btn_star_big_off" />
+
+            <ImageButton
                 android:id="@+id/btnComment"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -80,8 +88,6 @@
                 android:contentDescription="View comments"
                 android:src="@android:drawable/stat_notify_chat"
                 app:tint="@android:color/darker_gray" />
-
-            <!-- You can add other buttons like 'like' or 'share' here later -->
 
         </LinearLayout>
 

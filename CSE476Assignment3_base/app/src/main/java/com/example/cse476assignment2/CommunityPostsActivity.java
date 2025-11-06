@@ -1,3 +1,4 @@
+// /app/src/main/java/com/example/cse476assignment2/CommunityPostsActivity.java
 package com.example.cse476assignment2;
 
 import android.Manifest;
@@ -44,22 +45,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-// NEW: Implement the click listener interface
-public class CommunityPostsActivity extends AppCompatActivity implements PostAdapter.OnCommentClickListener {
-
-    private static final int REQUEST_CAMERA_PERMISSION = 100;
-    private static final int REQUEST_LOCATION_PERMISSION = 101;
-    private static final String USER_PREFS = "USER_PREFS";
-    private static final String KEY_LOCATION_TRACKING = "LOCATION_TRACKING";
+// UPDATED: Implement the new listener interface
+public class CommunityPostsActivity extends AppCompatActivity implements PostAdapter.OnPostInteractionListener {
 
     private final List<Post> userPosts = new ArrayList<>();
     private PostAdapter postAdapter;
     private RecyclerView postsRecyclerView;
     private SortOption currentSortOption = SortOption.MOST_RECENT;
-
     private ActivityResultLauncher<Intent> cameraXLauncher;
     private ActivityResultLauncher<String> galleryLauncher;
-    private ActivityResultLauncher<Intent> commentsLauncher; // NEW: Launcher for comments
+    private ActivityResultLauncher<Intent> commentsLauncher;
 
     private enum SortOption {
         MOST_RECENT,
@@ -76,18 +71,15 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         postsRecyclerView = findViewById(R.id.recyclerPosts);
         Spinner sortSpinner = findViewById(R.id.sortSpinner);
 
-        // --- NEW: Load posts from file or create defaults ---
         List<Post> loadedPosts = DataManager.loadPosts(this);
         if (loadedPosts == null || loadedPosts.isEmpty()) {
-            ensureDefaultPosts(); // Only create defaults on first run
-            DataManager.savePosts(this, userPosts); // Save them immediately
+            ensureDefaultPosts();
+            DataManager.savePosts(this, userPosts);
         } else {
             userPosts.addAll(loadedPosts);
         }
-        // --- End of new loading logic ---
 
         postsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // NEW: Pass 'this' as the listener to the adapter
         postAdapter = new PostAdapter(userPosts, this);
         postsRecyclerView.setAdapter(postAdapter);
 
@@ -99,7 +91,6 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         addPostButton.setOnClickListener(v -> showImageSourceChooser());
     }
 
-    // --- NEW: Handle saving data when the app is stopped ---
     @Override
     protected void onStop() {
         super.onStop();
@@ -107,14 +98,13 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     }
 
     private void registerActivityResultLaunchers() {
-        // ... (cameraXLauncher and galleryLauncher registrations from your original file)
         cameraXLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         String photoPath = result.getData().getStringExtra("photoUri");
                         if (photoPath != null) {
-                            addPostToFeed(Uri.parse(photoPath), "", ""); // Simplified for example
+                            addPostToFeed(Uri.parse(photoPath), "", "");
                         }
                     }
                 }
@@ -124,13 +114,11 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        addPostToFeed(uri, "", ""); // Simplified for example
+                        addPostToFeed(uri, "", "");
                     }
                 }
         );
 
-
-        // NEW: Register a launcher for the CommentsActivity result
         commentsLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -146,13 +134,20 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                 });
     }
 
-    // --- NEW: Implementation of the click listener method ---
     @Override
     public void onCommentClick(Post post, int position) {
         Intent intent = new Intent(this, CommentsActivity.class);
         intent.putExtra(CommentsActivity.EXTRA_POST, post);
-        intent.putExtra("POST_POSITION", position); // Pass position to get it back in the result
+        intent.putExtra("POST_POSITION", position);
         commentsLauncher.launch(intent);
+    }
+
+    // NEW: Handle post like clicks (for persistence)
+    @Override
+    public void onLikeClick(int position) {
+        // The data is already changed in the 'userPosts' list.
+        // The onStop() method will handle saving it.
+        // We could add more logic here if needed, but for now, this is sufficient.
     }
 
     private void setupSortSpinner(Spinner sortSpinner) {
@@ -189,18 +184,13 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     private void ensureDefaultPosts() {
         if (!userPosts.isEmpty()) return;
         long now = System.currentTimeMillis();
+        // UPDATED: Add initial like counts to default posts
         userPosts.add(new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18)));
         userPosts.add(new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6)));
         userPosts.add(new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1)));
     }
 
-    // NOTE: Keep your existing showImageSourceChooser, openCameraXActivity, etc. methods
     private void showImageSourceChooser() {
-        // This is a placeholder for your existing implementation
-        openCameraXActivity();
-    }
-    private void openCameraXActivity() {
-        // This is a placeholder for your existing implementation
         Intent intent = new Intent(this, CameraXActivity.class);
         cameraXLauncher.launch(intent);
     }
