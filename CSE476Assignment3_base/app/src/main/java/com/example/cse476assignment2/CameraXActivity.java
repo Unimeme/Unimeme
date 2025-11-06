@@ -1,138 +1,324 @@
 package com.example.cse476assignment2;
 
-import android.app.Activity;
+import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.ImageButton;
+import android.os.Environment;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
-import java.io.File;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageCapture;
-import androidx.camera.core.ImageCaptureException;
-import androidx.camera.core.Preview;
-import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.camera.view.PreviewView;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.android.material.button.MaterialButton;
 
-import java.util.concurrent.ExecutionException;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class CameraXActivity extends AppCompatActivity {
 
-    private static final int REQUEST_POST_PREVIEW = 2;
+    private static final String PREFS_NAME = "LOGIN_PREFS";
+    private static final String KEY_USERNAME = "USERNAME";
+    private static final String KEY_SHARE_LOCATION = "SHARE_LOCATION";
+    public static final String KEY_LAST_POST_URI = "LAST_POST_URI";
+    public static final String KEY_LAST_POST_LOCATION = "LAST_POST_LOCATION";
+    public static final String KEY_LAST_POST_TIMESTAMP = "LAST_POST_TIMESTAMP";
+    public static final String KEY_LAST_POST_USERNAME = "LAST_POST_USERNAME";
+    private static final String STATE_PHOTO_URI = "state_photo_uri";
+    private static final String STATE_HAS_PHOTO = "state_has_photo";
+    private static final String STATE_LOCATION_TEXT = "state_location_text";
 
-    private PreviewView previewView;
-    private ImageCapture imageCapture;
-    private Button btnCapture;
-    private ImageButton backButton;
+    private ImageView postImagePreview;
+    private MaterialButton takePhotoButton;
+    private TextView locationValueText;
+    private View locationContainer;
 
-    private ActivityResultLauncher<Intent> postPreviewLauncher;
+    private Uri photoUri;
+    private boolean hasPhoto;
+    private boolean shareLocationEnabled;
+    private String currentLocationText;
+    private String username;
+
+    private ActivityResultLauncher<Uri> takePictureLauncher;
+    private ActivityResultLauncher<String> cameraPermissionLauncher;
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_x);
 
-        previewView = findViewById(R.id.previewView);
-        btnCapture = findViewById(R.id.btnCapture);
-        backButton = findViewById(R.id.backButton);
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        shareLocationEnabled = sharedPreferences.getBoolean(KEY_SHARE_LOCATION, false);
+        username = getIntent().getStringExtra("USERNAME");
+        if (username == null || username.trim().isEmpty()) {
+            username = sharedPreferences.getString(KEY_USERNAME, getString(R.string.user_default));
+        }
 
-        backButton.setOnClickListener(v -> finish());
+        TextView postingAsText = findViewById(R.id.posting_as_text);
+        postImagePreview = findViewById(R.id.post_image_preview);
+        locationValueText = findViewById(R.id.location_value);
+        takePhotoButton = findViewById(R.id.take_photo_button);
+        MaterialButton uploadButton = findViewById(R.id.upload_post_button);
+        MaterialButton cancelButton = findViewById(R.id.cancel_post_button);
+        locationContainer = findViewById(R.id.location_container);
 
-        startCamera();
+        postingAsText.setText(getString(R.string.create_post_posting_as, username));
 
-        btnCapture.setOnClickListener(v -> takePhoto());
+        setupActivityResultLaunchers();
 
+        takePhotoButton.setOnClickListener(v -> checkCameraPermissionAndLaunch());
+        uploadButton.setOnClickListener(v -> uploadPost());
+        cancelButton.setOnClickListener(v -> {
+            setResult(RESULT_CANCELED);
+            finish();
+        });
 
-        postPreviewLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        Intent data = result.getData();
-                        if (data != null) {
-                            // Pass the data back to CommunityPostsActivity
-                            setResult(Activity.RESULT_OK, data);
-                        }
-                        // Close CameraXActivity
-                        finish();
-                    }
-                }
-        );
+        if (!shareLocationEnabled) {
+            locationContainer.setVisibility(View.GONE);
+            locationValueText.setText(R.string.create_post_location_disabled);
+        } else {
+            locationContainer.setVisibility(View.VISIBLE);
+            locationValueText.setText(R.string.create_post_location_loading);
+            requestLocationIfNeeded();
+        }
 
+        if (savedInstanceState != null) {
+            restoreInstanceState(savedInstanceState);
+        }
     }
 
-    private void startCamera() {
-        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        cameraProviderFuture.addListener(() -> {
-            try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-
-                Preview preview = new Preview.Builder().build();
-                preview.setSurfaceProvider(previewView.getSurfaceProvider());
-
-                imageCapture = new ImageCapture.Builder().build();
-
-                CameraSelector cameraSelector = new CameraSelector.Builder()
-                        .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-                        .build();
-
-                cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
-
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
+    private void setupActivityResultLaunchers() {
+        takePictureLauncher = registerForActivityResult(new ActivityResultContracts.TakePicture(), result -> {
+            if (Boolean.TRUE.equals(result)) {
+                hasPhoto = true;
+                if (photoUri != null) {
+                    postImagePreview.setImageURI(photoUri);
+                    postImagePreview.setContentDescription(getString(R.string.create_post_image_preview_content_description));
+                }
+                takePhotoButton.setText(R.string.create_post_retake_photo);
+            } else {
+                hasPhoto = false;
+                photoUri = null;
+                postImagePreview.setImageDrawable(null);
+                postImagePreview.setContentDescription(getString(R.string.create_post_image_preview_content_description));
+                takePhotoButton.setText(R.string.create_post_take_photo);
             }
-        }, ContextCompat.getMainExecutor(this));
-    }
+        });
 
-    private void takePhoto() {
-        if (imageCapture == null) return;
-
-        File photoFile = new File(getFilesDir(), "IMG_" + System.currentTimeMillis() + ".jpg");
-        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions.Builder(photoFile).build();
-
-        imageCapture.takePicture(
-                outputOptions,
-                ContextCompat.getMainExecutor(this),
-                new ImageCapture.OnImageSavedCallback() {
-                    @Override
-                    public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                        // Launch PostPreviewActivity using the launcher
-                        Intent intent = new Intent(CameraXActivity.this, PostPreviewActivity.class);
-                        intent.putExtra("photoUri", Uri.fromFile(photoFile).toString());
-                        postPreviewLauncher.launch(intent);
-                    }
-
-                    @Override
-                    public void onError(@NonNull ImageCaptureException exception) {
-                        exception.printStackTrace();
-                        Toast.makeText(CameraXActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show();
+        cameraPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (Boolean.TRUE.equals(isGranted)) {
+                        launchCamera();
+                    } else {
+                        Toast.makeText(this, R.string.create_post_camera_permission_explanation, Toast.LENGTH_LONG).show();
                     }
                 }
         );
 
+        locationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    boolean fineGranted = Boolean.TRUE.equals(result.get(Manifest.permission.ACCESS_FINE_LOCATION));
+                    boolean coarseGranted = Boolean.TRUE.equals(result.get(Manifest.permission.ACCESS_COARSE_LOCATION));
+                    if (fineGranted || coarseGranted) {
+                        fetchLocation();
+                    } else {
+                        currentLocationText = getString(R.string.create_post_location_permission_explanation);
+                        locationValueText.setText(currentLocationText);
+                        Toast.makeText(this, R.string.create_post_location_permission_explanation, Toast.LENGTH_LONG).show();
+                    }
+                }
+        );
+    }
+
+    private void checkCameraPermissionAndLaunch() {
+        if (!isCameraAvailable()) {
+            Toast.makeText(this, R.string.create_post_camera_unavailable, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            launchCamera();
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    private void launchCamera() {
+        if (!isCameraAvailable()) {
+            Toast.makeText(this, R.string.create_post_camera_unavailable, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        try {
+            File photoFile = createImageFile();
+            photoUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", photoFile);
+            takePictureLauncher.launch(photoUri);
+        } catch (IOException e) {
+            Toast.makeText(this, R.string.create_post_camera_error, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean isCameraAvailable() {
+        return getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
+    }
+
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "POST_" + timeStamp;
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        if (storageDir == null) {
+            storageDir = getFilesDir();
+        }
+        return File.createTempFile(imageFileName, ".jpg", storageDir);
+    }
+
+    private void requestLocationIfNeeded() {
+        if (!shareLocationEnabled) {
+            return;
+        }
+
+        if (hasLocationPermission()) {
+            fetchLocation();
+        } else {
+            locationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        }
+    }
+
+    private boolean hasLocationPermission() {
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void fetchLocation() {
+        if (!hasLocationPermission()) {
+            return;
+        }
+
+        if (!isLocationHardwareAvailable()) {
+            currentLocationText = getString(R.string.create_post_location_hardware_unavailable);
+            locationValueText.setText(currentLocationText);
+            return;
+        }
+
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (locationManager == null) {
+            currentLocationText = getString(R.string.create_post_location_hardware_unavailable);
+            locationValueText.setText(currentLocationText);
+            return;
+        }
+
+        Location location = null;
+        try {
+            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (location == null) {
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+        } catch (SecurityException ignored) {
+            currentLocationText = getString(R.string.create_post_location_permission_explanation);
+            locationValueText.setText(currentLocationText);
+            return;
+        }
+
+        if (location != null) {
+            String latitude = String.format(Locale.getDefault(), "%.4f", location.getLatitude());
+            String longitude = String.format(Locale.getDefault(), "%.4f", location.getLongitude());
+            currentLocationText = getString(R.string.create_post_location_value, latitude, longitude);
+        } else {
+            currentLocationText = getString(R.string.create_post_location_unavailable);
+        }
+        locationValueText.setText(currentLocationText);
+    }
+
+    private boolean isLocationHardwareAvailable() {
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (locationManager == null) {
+            return false;
+        }
+
+        try {
+            return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                    || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (SecurityException ignored) {
+            return false;
+        }
+    }
+
+    private void uploadPost() {
+        if (!hasPhoto || photoUri == null) {
+            Toast.makeText(this, R.string.create_post_no_photo_error, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(KEY_LAST_POST_URI, photoUri.toString());
+        String locationToStore = "";
+        if (shareLocationEnabled && currentLocationText != null
+                && !currentLocationText.equals(getString(R.string.create_post_location_loading))) {
+            locationToStore = currentLocationText;
+        }
+        editor.putString(KEY_LAST_POST_LOCATION, locationToStore);
+        editor.putLong(KEY_LAST_POST_TIMESTAMP, System.currentTimeMillis());
+        editor.putString(KEY_LAST_POST_USERNAME, username);
+        editor.apply();
+
+        Intent resultData = new Intent();
+        resultData.putExtra("photoUri", photoUri.toString());
+        resultData.putExtra("caption", "");
+        setResult(RESULT_OK, resultData);
+
+        Toast.makeText(this, R.string.create_post_upload_success, Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    private void restoreInstanceState(Bundle savedInstanceState) {
+        String savedUri = savedInstanceState.getString(STATE_PHOTO_URI);
+        hasPhoto = savedInstanceState.getBoolean(STATE_HAS_PHOTO, false);
+        currentLocationText = savedInstanceState.getString(STATE_LOCATION_TEXT);
+
+        if (savedUri != null) {
+            photoUri = Uri.parse(savedUri);
+            postImagePreview.setImageURI(photoUri);
+            postImagePreview.setContentDescription(getString(R.string.create_post_image_preview_content_description));
+            if (hasPhoto) {
+                takePhotoButton.setText(R.string.create_post_retake_photo);
+            }
+        }
+
+        if (currentLocationText != null && shareLocationEnabled) {
+            locationValueText.setText(currentLocationText);
+        }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_POST_PREVIEW) {
-            if (resultCode == Activity.RESULT_OK && data != null) {
-                // Pass the data back to CommunityPostsActivity
-                setResult(RESULT_OK, data);
-            }
-            // Close CameraXActivity and return to CommunityPostsActivity
-            finish();
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (photoUri != null) {
+            outState.putString(STATE_PHOTO_URI, photoUri.toString());
+        }
+        outState.putBoolean(STATE_HAS_PHOTO, hasPhoto);
+        if (currentLocationText != null) {
+            outState.putString(STATE_LOCATION_TEXT, currentLocationText);
         }
     }
 }

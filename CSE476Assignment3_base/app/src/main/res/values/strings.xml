@@ -107,5 +107,24 @@
     <string name="camera_permission_needed_message">You’ve permanently denied camera access. Please enable it in Settings to take photos.</string>
     <string name="open_settings">Open Settings</string>
 
+    <string name="create_post_posting_as">Posting as %1$s</string>
+    <string name="create_post_take_photo">Take Photo</string>
+    <string name="create_post_retake_photo">Retake Photo</string>
+    <string name="create_post_location_label">Location:</string>
+    <string name="create_post_location_disabled">Location sharing disabled</string>
+    <string name="create_post_location_loading">Loading location…</string>
+    <string name="create_post_location_permission_explanation">Location permission is required to attach your location.</string>
+    <string name="create_post_location_hardware_unavailable">Location services unavailable</string>
+    <string name="create_post_location_value">%1$s°, %2$s°</string>
+    <string name="create_post_location_unavailable">Location unavailable</string>
+    <string name="create_post_camera_permission_explanation">Camera permission is required to take a photo.</string>
+    <string name="create_post_camera_unavailable">No camera available on this device.</string>
+    <string name="create_post_camera_error">Could not open the camera.</string>
+    <string name="create_post_no_photo_error">Take a photo before posting.</string>
+    <string name="create_post_upload_success">Post uploaded!</string>
+    <string name="create_post_image_preview_content_description">Captured image preview</string>
+    <string name="create_post_upload">Upload Post</string>
+    <string name="create_post_cancel">Cancel</string>
+
 
 </resources>
