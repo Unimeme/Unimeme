@@ -54,6 +54,15 @@
             android:textSize="14sp"
             android:textColor="@android:color/black" />
 
+        <TextView
+            android:id="@+id/postLikes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginBottom="12dp"
+            android:textColor="@android:color/darker_gray"
+            android:textStyle="bold" />
+
     </LinearLayout>
 
 

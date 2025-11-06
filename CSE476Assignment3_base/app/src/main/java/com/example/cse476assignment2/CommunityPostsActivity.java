@@ -12,11 +12,15 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -40,7 +44,9 @@ import com.google.android.gms.tasks.CancellationTokenSource;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class CommunityPostsActivity extends AppCompatActivity {
 
@@ -60,9 +66,16 @@ public class CommunityPostsActivity extends AppCompatActivity {
     private Button postButton;
     private RecyclerView postsRecyclerView;
     private PostAdapter postAdapter;
+    private Spinner sortSpinner;
     private Uri pendingImageUri;
     private String pendingCaption;
     private FusedLocationProviderClient fusedLocationClient;
+    private SortOption currentSortOption = SortOption.MOST_RECENT;
+
+    private enum SortOption {
+        MOST_RECENT,
+        MOST_LIKED
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,13 +92,16 @@ public class CommunityPostsActivity extends AppCompatActivity {
         captionInput = findViewById(R.id.etCaption);
         postButton = findViewById(R.id.btnPost);
         postsRecyclerView = findViewById(R.id.recyclerPosts);
+        sortSpinner = findViewById(R.id.sortSpinner);
 
         postsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         postAdapter = new PostAdapter(userPosts);
         postsRecyclerView.setAdapter(postAdapter);
 
+        setupSortSpinner();
+
         ensureDefaultPosts();
-        postAdapter.notifyDataSetChanged();
+        sortPostsAndRefresh();
 
         registerActivityResultLaunchers();
 
@@ -97,6 +113,35 @@ public class CommunityPostsActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
+        });
+    }
+
+    private void setupSortSpinner() {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this,
+                R.array.post_sort_options,
+                android.R.layout.simple_spinner_item
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sortSpinner.setAdapter(adapter);
+        sortSpinner.setSelection(currentSortOption.ordinal());
+        sortSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private boolean isInitialSelection = true;
+
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                SortOption selectedOption = position == 0 ? SortOption.MOST_RECENT : SortOption.MOST_LIKED;
+                if (currentSortOption != selectedOption || isInitialSelection) {
+                    currentSortOption = selectedOption;
+                    sortPostsAndRefresh();
+                }
+                isInitialSelection = false;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // No-op
+            }
         });
     }
 
@@ -210,9 +255,31 @@ public class CommunityPostsActivity extends AppCompatActivity {
 
     private void addPostToFeed(Uri imageUri, String caption, String location) {
         Post newPost = new Post(imageUri, caption, getString(R.string.you_as_user), location);
-        userPosts.add(0, newPost);
-        postAdapter.notifyItemInserted(0);
-        postsRecyclerView.scrollToPosition(0);
+        userPosts.add(newPost);
+        sortPostsAndRefresh();
+    }
+
+    private void sortPostsAndRefresh() {
+        if (postAdapter == null) {
+            return;
+        }
+
+        if (currentSortOption == SortOption.MOST_RECENT) {
+            Collections.sort(userPosts, (first, second) -> Long.compare(second.getCreatedAt(), first.getCreatedAt()));
+        } else {
+            Collections.sort(userPosts, (first, second) -> {
+                int likeComparison = Integer.compare(second.getLikeCount(), first.getLikeCount());
+                if (likeComparison != 0) {
+                    return likeComparison;
+                }
+                return Long.compare(second.getCreatedAt(), first.getCreatedAt());
+            });
+        }
+
+        postAdapter.notifyDataSetChanged();
+        if (postsRecyclerView != null && postAdapter.getItemCount() > 0) {
+            postsRecyclerView.scrollToPosition(0);
+        }
     }
 
     private void ensureDefaultPosts() {
@@ -220,23 +287,31 @@ public class CommunityPostsActivity extends AppCompatActivity {
             return;
         }
 
+        long now = System.currentTimeMillis();
+
         userPosts.add(new Post(
                 R.drawable.squirrel_post,
                 getString(R.string.post_caption_1),
                 getString(R.string.tenth_place_name),
-                getString(R.string.post_location_beal_gardens)
+                getString(R.string.post_location_beal_gardens),
+                42,
+                now - TimeUnit.HOURS.toMillis(18)
         ));
         userPosts.add(new Post(
                 R.drawable.online_class,
                 getString(R.string.post_caption_2),
                 getString(R.string.first_place_name),
-                getString(R.string.post_location_online)
+                getString(R.string.post_location_online),
+                120,
+                now - TimeUnit.HOURS.toMillis(6)
         ));
         userPosts.add(new Post(
                 R.drawable.beaumont_tower,
                 getString(R.string.post_caption_3),
                 getString(R.string.fifth_place_name),
-                getString(R.string.post_location_beaumont)
+                getString(R.string.post_location_beaumont),
+                75,
+                now - TimeUnit.DAYS.toMillis(1)
         ));
     }
 

@@ -84,6 +84,14 @@
     <string name="post_location_beal_gardens">📍 Beal Botanical Garden</string>
     <string name="post_location_online">📍 Virtual Classroom</string>
     <string name="post_location_beaumont">📍 Beaumont Tower</string>
+    <string name="likes_format">%1$d likes</string>
+    <string name="sort_option_recent">Most Recent</string>
+    <string name="sort_option_liked">Most Liked</string>
+    <string name="sort_spinner_content_description">Sort posts</string>
+    <string-array name="post_sort_options">
+        <item>@string/sort_option_recent</item>
+        <item>@string/sort_option_liked</item>
+    </string-array>
 
     <string name="button_daily_challenge">Daily Challenge</string>
     <string name="button_add_post">Add Post</string>
