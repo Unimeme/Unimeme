@@ -37,7 +37,7 @@ public class CameraXActivity extends AppCompatActivity {
     private ImageButton backButton;
 
     private ActivityResultLauncher<Intent> postPreviewLauncher;
-    private ActivityResultLauncher<Intent> mediaPickerLauncher;
+    private ActivityResultLauncher<String> galleryLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,10 +55,7 @@ public class CameraXActivity extends AppCompatActivity {
 
         btnCapture.setOnClickListener(v -> takePhoto());
 
-        btnUploadFromLibrary.setOnClickListener(v -> {
-            Intent intent = new Intent(CameraXActivity.this, MediaPickerActivity.class);
-            mediaPickerLauncher.launch(intent);
-        });
+        btnUploadFromLibrary.setOnClickListener(v -> galleryLauncher.launch("image/*"));
 
 
         postPreviewLauncher = registerForActivityResult(
@@ -76,15 +73,13 @@ public class CameraXActivity extends AppCompatActivity {
                 }
         );
 
-        mediaPickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        Intent data = result.getData();
-                        if (data != null) {
-                            setResult(Activity.RESULT_OK, data);
-                        }
-                        finish();
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        Intent intent = new Intent(CameraXActivity.this, PostPreviewActivity.class);
+                        intent.putExtra("photoUri", uri.toString());
+                        postPreviewLauncher.launch(intent);
                     }
                 }
         );
