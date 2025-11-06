@@ -1,10 +1,14 @@
+// /app/src/main/java/com/example/cse476assignment2/PostAdapter.java
 package com.example.cse476assignment2;
 
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton; // Import ImageButton
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -31,6 +35,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     @Override
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
         Post post = posts.get(position);
+
+        // --- NEW: Set OnClickListener for the comment button ---
+        holder.btnComment.setOnClickListener(v -> {
+            Context context = holder.itemView.getContext();
+            Intent intent = new Intent(context, CommentsActivity.class);
+            // Pass the entire Post object to the CommentsActivity
+            intent.putExtra(CommentsActivity.EXTRA_POST, post);
+            context.startActivity(intent);
+        });
+        // --- End of new OnClickListener setup ---
 
         holder.authorView.setText(post.getAuthor());
 
@@ -61,7 +75,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.captionView.setVisibility(View.VISIBLE);
         }
 
-        holder.likesView.setText(holder.likesView.getContext().getString(R.string.likes_format, post.getLikeCount()));
+        holder.likesView.setText(holder.itemView.getContext().getString(R.string.likes_format, post.getLikeCount()));
     }
 
     @Override
@@ -75,6 +89,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         final ImageView imageView;
         final TextView captionView;
         final TextView likesView;
+        final ImageButton btnComment; // NEW: Add the comment button
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -83,6 +98,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             imageView = itemView.findViewById(R.id.postImage);
             captionView = itemView.findViewById(R.id.postCaption);
             likesView = itemView.findViewById(R.id.postLikes);
+            btnComment = itemView.findViewById(R.id.btnComment); // NEW: Find the button by its ID
         }
     }
 }
