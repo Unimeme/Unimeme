@@ -34,7 +34,8 @@
             android:background="@android:drawable/edit_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            android:textColorHint="@color/hint_grey" />
 
         <!-- Password -->
         <EditText
@@ -46,7 +47,8 @@
             android:background="@android:drawable/edit_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp"
+            android:textColorHint="@color/hint_grey" />
 
         <!-- Login Button -->
         <Button

@@ -43,7 +43,8 @@
             android:hint="Add a comment..."
             android:inputType="textCapSentences"
             android:maxLines="4"
-            android:autofillHints="Type a comment" />
+            android:autofillHints="Type a comment"
+            android:textColorHint="@color/hint_grey" />
 
         <Button
             android:id="@+id/btnPostComment"

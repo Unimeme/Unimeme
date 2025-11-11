@@ -25,7 +25,8 @@
         android:background="@android:drawable/edit_text"
         android:textSize="16sp"
         android:maxLength="256"
-        android:inputType="textCapSentences"/>
+        android:inputType="textCapSentences"
+        android:textColorHint="@color/hint_grey" />
 
     <EditText
         android:id="@+id/hashtagInput"
@@ -36,7 +37,8 @@
         android:hint="#gogreen #msu #sparty"
         android:inputType="text"
         android:padding="8dp"
-        android:autofillHints="" />
+        android:autofillHints=""
+        android:textColorHint="@color/hint_grey" />
 
 
     <LinearLayout

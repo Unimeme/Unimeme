@@ -5,5 +5,8 @@
     <color name="app_background">#ECECEC</color>
     <color name="post_primary_text_color">#FF000000</color> <!-- Black -->
     <color name="post_secondary_text_color">#FF616161</color> <!-- Dark Gray -->
+    <!-- The new color for all hint text in EditText fields -->
+    <color name="hint_grey">#808080</color>
+
 
 </resources>
