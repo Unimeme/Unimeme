@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Declare UI elements and shared preferences
     EditText username, password;
-    Button loginButton;
+    Button loginButton, newMemberButton;
     CheckBox rememberMe;
     SharedPreferences sharedPreferences;
 
@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         password = findViewById(R.id.password);
         loginButton = findViewById(R.id.loginButton);
         rememberMe = findViewById(R.id.rememberMe);
-
+        newMemberButton = findViewById(R.id.buttonNewMember); // ✅ New Button
 
 
         // Initialize SharedPreferences to store login data
@@ -106,8 +106,12 @@ public class MainActivity extends AppCompatActivity {
             else {
                 Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
             }
+        });
 
-
+        // new member create button
+        newMemberButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SignUpActivity.class);
+            startActivity(intent);
         });
     }
 

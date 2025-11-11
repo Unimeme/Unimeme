@@ -37,6 +37,8 @@
         <activity android:name=".PostPreviewActivity" />
         <activity android:name=".CommentsActivity" />
         <activity android:name=".HashtagPostsActivity" />
+        <activity android:name=".SignUpActivity" />
+        <activity android:name=".TermsActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
