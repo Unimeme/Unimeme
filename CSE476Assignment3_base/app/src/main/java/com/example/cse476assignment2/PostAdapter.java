@@ -1,7 +1,5 @@
-// /app/src/main/java/com/example/cse476assignment2/PostAdapter.java
 package com.example.cse476assignment2;
 
-import android.net.Uri;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -23,7 +21,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public interface OnPostInteractionListener {
         void onCommentClick(Post post, int position);
         void onLikeClick(int position);
-        void onHashtagClick(String hashtag); // NEW
+        void onHashtagClick(String hashtag);
+        void onDeleteClick(int position); // NEW
     }
 
     private final List<Post> posts;
@@ -53,9 +52,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     }
 
     static class PostViewHolder extends RecyclerView.ViewHolder {
-        final TextView authorView, locationView, captionView, likesView, hashtagsView; // UPDATED
+        final TextView authorView, locationView, captionView, likesView, hashtagsView;
         final ImageView imageView;
-        final ImageButton btnComment, btnLikePost;
+        final ImageButton btnComment, btnLikePost, btnDeletePost; // UPDATED
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -64,9 +63,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             imageView = itemView.findViewById(R.id.postImage);
             captionView = itemView.findViewById(R.id.postCaption);
             likesView = itemView.findViewById(R.id.postLikes);
-            hashtagsView = itemView.findViewById(R.id.postHashtags); // NEW
+            hashtagsView = itemView.findViewById(R.id.postHashtags);
             btnComment = itemView.findViewById(R.id.btnComment);
             btnLikePost = itemView.findViewById(R.id.btnLikePost);
+            btnDeletePost = itemView.findViewById(R.id.btnDeletePost); // NEW
         }
 
         public void bind(Post post, int position, OnPostInteractionListener listener) {
@@ -83,8 +83,22 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             }
 
             updateLikes(post);
+
+            // --- NEW: Delete Button Logic ---
+            if (listener != null) {
+                // Compare author to the string resource for "You" to check if it's the user's post
+                if (post.getAuthor().equals(itemView.getContext().getString(R.string.you_as_user))) {
+                    btnDeletePost.setVisibility(View.VISIBLE);
+                    btnDeletePost.setOnClickListener(v -> listener.onDeleteClick(position));
+                } else {
+                    btnDeletePost.setVisibility(View.GONE);
+                }
+            } else {
+                btnDeletePost.setVisibility(View.GONE);
+            }
+
             btnLikePost.setOnClickListener(v -> {
-                if (listener == null) return; // Prevent crash on hashtag screen
+                if (listener == null) return;
                 post.toggleLike();
                 updateLikes(post);
                 listener.onLikeClick(position);
@@ -94,7 +108,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 if (listener != null) listener.onCommentClick(post, position);
             });
 
-            // --- NEW: Hashtag Logic ---
             if (post.getHashtags() != null && !post.getHashtags().isEmpty()) {
                 StringBuilder hashtagBuilder = new StringBuilder();
                 for (String tag : post.getHashtags()) {
@@ -113,16 +126,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         @Override
                         public void updateDrawState(@NonNull TextPaint ds) {
                             super.updateDrawState(ds);
-                            ds.setUnderlineText(false); // No underline
+                            ds.setUnderlineText(false);
                         }
                     };
                     int endIndex = startIndex + currentTag.length();
                     spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    startIndex = endIndex + 1; // Move to the start of the next tag
+                    startIndex = endIndex + 1;
                 }
 
                 hashtagsView.setText(spannableString);
-                hashtagsView.setMovementMethod(LinkMovementMethod.getInstance()); // Make links clickable
+                hashtagsView.setMovementMethod(LinkMovementMethod.getInstance());
                 hashtagsView.setVisibility(View.VISIBLE);
             } else {
                 hashtagsView.setVisibility(View.GONE);

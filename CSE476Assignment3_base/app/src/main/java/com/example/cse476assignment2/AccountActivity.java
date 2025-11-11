@@ -7,16 +7,10 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
-
-// The following code is written based on YouTube videos I watched
-// ChatGPT was used to beautify code and add comments in places they were not in already
-// change for testing merge in git repo
 
 public class AccountActivity extends AppCompatActivity {
 
-    // Declare UI elements and shared preferences
-    TextView usernameTextView;
+    TextView displayNameTextView, emailTextView;
     Button leaderboardButton, communitypostsButton, logoutButton, accountSettingsButton;
     SharedPreferences sharedPreferences;
 
@@ -25,13 +19,13 @@ public class AccountActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_account);
 
-        String username = getIntent().getStringExtra("USERNAME");
-        if (username == null) {
-            username = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE).getString("USERNAME", "User");
+        String email = getIntent().getStringExtra("USERNAME");
+        if (email == null) {
+            email = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE).getString("USERNAME", "User");
         }
 
-
-        usernameTextView = findViewById(R.id.textView);
+        displayNameTextView = findViewById(R.id.displayNameTextView);
+        emailTextView = findViewById(R.id.emailTextView);
         leaderboardButton = findViewById(R.id.button4);
         communitypostsButton = findViewById(R.id.buttonCommunityPosts);
         logoutButton = findViewById(R.id.logoutButton);
@@ -39,7 +33,13 @@ public class AccountActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
 
-        usernameTextView.setText(username);
+        // Load the display name from the user-specific preferences
+        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + email, MODE_PRIVATE);
+        String displayName = userPrefs.getString("USER_DISPLAY_NAME", "User");
+
+        // Set the text for both fields
+        displayNameTextView.setText(displayName);
+        emailTextView.setText(email);
 
         leaderboardButton.setText(R.string.go_to_leaderboard);
         communitypostsButton.setText(R.string.go_to_community_posts);
@@ -56,10 +56,10 @@ public class AccountActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        final String finalUsername = username;
+        final String finalEmail = email;
         accountSettingsButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccountActivity.this, PreferencesActivity.class);
-            intent.putExtra("USERNAME", finalUsername);
+            intent.putExtra("USERNAME", finalEmail);
             startActivity(intent);
         });
 
@@ -68,5 +68,19 @@ public class AccountActivity extends AppCompatActivity {
             startActivity(new Intent(AccountActivity.this, MainActivity.class));
             finish();
         });
+    }
+
+    // UPDATED: This onResume will refresh the display name if the user changes it in settings
+    @Override
+    protected void onResume() {
+        super.onResume();
+        String email = emailTextView.getText().toString();
+        if (email.isEmpty()) {
+            email = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE).getString("USERNAME", "User");
+        }
+        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + email, MODE_PRIVATE);
+        String displayName = userPrefs.getString("USER_DISPLAY_NAME", "User");
+        displayNameTextView.setText(displayName);
+        emailTextView.setText(email);
     }
 }

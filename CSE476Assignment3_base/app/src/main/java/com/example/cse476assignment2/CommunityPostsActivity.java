@@ -1,7 +1,7 @@
-// /app/src/main/java/com/example/cse476assignment2/CommunityPostsActivity.java
 package com.example.cse476assignment2;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -12,10 +12,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Spinner;
+import android.widget.Toast;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,10 +30,8 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
     private final List<Post> userPosts = new ArrayList<>();
     private PostAdapter postAdapter;
-    private RecyclerView postsRecyclerView;
     private SortOption currentSortOption = SortOption.MOST_RECENT;
     private ActivityResultLauncher<Intent> cameraXLauncher;
-    private ActivityResultLauncher<String> galleryLauncher;
     private ActivityResultLauncher<Intent> commentsLauncher;
     private ActivityResultLauncher<Intent> postPreviewLauncher;
 
@@ -48,7 +47,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
         ImageButton backButton = findViewById(R.id.backButton);
         Button addPostButton = findViewById(R.id.btnAddPost);
-        postsRecyclerView = findViewById(R.id.recyclerPosts);
+        RecyclerView postsRecyclerView = findViewById(R.id.recyclerPosts);
         Spinner sortSpinner = findViewById(R.id.sortSpinner);
 
         List<Post> loadedPosts = DataManager.loadPosts(this);
@@ -110,18 +109,6 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                 }
         );
 
-        galleryLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        Intent previewIntent = new Intent(this, PostPreviewActivity.class);
-                        previewIntent.putExtra("photoUri", uri.toString());
-                        previewIntent.putExtra("location", "");
-                        postPreviewLauncher.launch(previewIntent);
-                    }
-                }
-        );
-
         commentsLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -147,6 +134,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
     @Override
     public void onLikeClick(int position) {
+        // This is handled in the adapter, but the method must be implemented.
     }
 
     @Override
@@ -155,6 +143,27 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         intent.putExtra(HashtagPostsActivity.EXTRA_HASHTAG, hashtag);
         intent.putExtra(HashtagPostsActivity.EXTRA_ALL_POSTS, (Serializable) userPosts);
         startActivity(intent);
+    }
+
+    // NEW: Implementation for the delete button listener
+    @Override
+    public void onDeleteClick(int position) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Post")
+                .setMessage("Are you sure you want to delete this post? This cannot be undone.")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    // Remove the post from the list
+                    userPosts.remove(position);
+                    // Notify the adapter that an item was removed
+                    postAdapter.notifyItemRemoved(position);
+                    // Save the updated list to persist the deletion
+                    DataManager.savePosts(CommunityPostsActivity.this, userPosts);
+                    // Show confirmation message
+                    Toast.makeText(this, "Post deleted successfully.", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("No", null) // Do nothing if "No" is pressed
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 
     private void setupSortSpinner(Spinner sortSpinner) {
@@ -197,25 +206,19 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
         Post squirrelPost = new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18));
         ArrayList<String> squirrelTags = new ArrayList<>();
-        squirrelTags.add("campuslife");
-        squirrelTags.add("squirrels");
-        squirrelTags.add("cute");
+        squirrelTags.add("campuslife"); squirrelTags.add("squirrels"); squirrelTags.add("cute");
         squirrelPost.setHashtags(squirrelTags);
         userPosts.add(squirrelPost);
 
         Post studyPost = new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6));
         ArrayList<String> studyTags = new ArrayList<>();
-        studyTags.add("studygrind");
-        studyTags.add("finals");
-        studyTags.add("latenight");
+        studyTags.add("studygrind"); studyTags.add("finals"); studyTags.add("latenight");
         studyPost.setHashtags(studyTags);
         userPosts.add(studyPost);
 
         Post towerPost = new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1));
         ArrayList<String> towerTags = new ArrayList<>();
-        towerTags.add("gogreen");
-        towerTags.add("msu");
-        towerTags.add("spartans");
+        towerTags.add("gogreen"); towerTags.add("msu"); towerTags.add("spartans");
         towerPost.setHashtags(towerTags);
         userPosts.add(towerPost);
     }

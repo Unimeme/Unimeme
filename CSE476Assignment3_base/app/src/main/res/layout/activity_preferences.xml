@@ -28,21 +28,48 @@
         app:layout_constraintTop_toBottomOf="@id/buttonBackPreferences" />
 
     <TextView
-        android:id="@+id/textViewBioLabel"
+        android:id="@+id/textViewDisplayNameLabel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="@string/bio_label"
+        android:text="Display Name"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textViewPreferencesTitle" />
 
     <EditText
+        android:id="@+id/editTextDisplayName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:autofillHints="name"
+        android:hint="Enter your display name"
+        android:inputType="textPersonName"
+        android:padding="12dp"
+        android:textColorHint="@color/hint_grey"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewDisplayNameLabel" />
+
+
+    <TextView
+        android:id="@+id/textViewBioLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/bio_label"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editTextDisplayName" />
+
+    <EditText
         android:id="@+id/editTextBio"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:autofillHints="none"
         android:hint="@string/bio_hint"
         android:inputType="textMultiLine"
         android:minLines="3"

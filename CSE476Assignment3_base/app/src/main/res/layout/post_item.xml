@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginStart="8dp"
@@ -15,15 +16,37 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Post Author -->
-        <TextView
-            android:id="@+id/postAuthor"
-            android:layout_width="wrap_content"
+        <!-- UPDATED: Header is now a RelativeLayout to position author and delete button -->
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:text="@string/you_as_user"
-            android:textColor="@color/post_primary_text_color"
-            android:textStyle="bold" />
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/postAuthor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:textColor="@color/post_primary_text_color"
+                android:textStyle="bold"
+                tools:text="Author Name" />
+
+            <!-- NEW: Delete Post Button -->
+            <ImageButton
+                android:id="@+id/btnDeletePost"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Delete post"
+                android:src="@android:drawable/ic_menu_delete"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+        </RelativeLayout>
+
 
         <!-- Post Location -->
         <TextView
@@ -35,7 +58,8 @@
             android:textColor="@color/post_secondary_text_color"
             android:textSize="12sp"
             android:textStyle="italic"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:text="Location"/>
 
         <!-- Post Image -->
         <ImageView
@@ -54,7 +78,7 @@
             android:textSize="14sp"
             android:textColor="@color/post_primary_text_color" />
 
-        <!-- NEW: Hashtags TextView -->
+        <!-- Hashtags TextView -->
         <TextView
             android:id="@+id/postHashtags"
             android:layout_width="match_parent"
