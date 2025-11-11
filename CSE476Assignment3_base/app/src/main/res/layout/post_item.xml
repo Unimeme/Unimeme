@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp"
             android:text="@string/you_as_user"
-            android:textColor="@android:color/black"
+            android:textColor="@color/post_primary_text_color"
             android:textStyle="bold" />
 
         <!-- Post Location -->
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginBottom="4dp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/post_secondary_text_color"
             android:textSize="12sp"
             android:textStyle="italic"
             android:visibility="gone" />
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:padding="12dp"
             android:textSize="14sp"
-            android:textColor="@android:color/black" />
+            android:textColor="@color/post_primary_text_color" />
 
         <!-- NEW: Hashtags TextView -->
         <TextView
@@ -72,7 +72,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginBottom="12dp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/post_secondary_text_color"
             android:textStyle="bold" />
 
         <!-- Container for action buttons -->

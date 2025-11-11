@@ -2,4 +2,6 @@
 <resources>
     <!-- Dark mode background -->
     <color name="app_background">#121212</color>
+    <color name="post_primary_text_color">#FFFFFFFF</color> <!-- White -->
+    <color name="post_secondary_text_color">#FFBDBDBD</color> <!-- Light Gray -->
 </resources>
