@@ -20,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.exifinterface.media.ExifInterface;
 import android.provider.MediaStore;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -29,11 +30,11 @@ public class PostPreviewActivity extends AppCompatActivity {
     private ImageView previewImage;
     private EditText captionInput;
     private Button btnContinue, btnCancel;
-
     private EditText hashtagInput;
 
     private Bitmap originalBitmap;
     private Bitmap filteredBitmap;
+    private String location;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +45,6 @@ public class PostPreviewActivity extends AppCompatActivity {
         captionInput = findViewById(R.id.captionInput);
         btnContinue = findViewById(R.id.btnContinue);
         btnCancel = findViewById(R.id.btnCancel);
-
         hashtagInput = findViewById(R.id.hashtagInput);
 
         Button btnGrayscale = findViewById(R.id.btnGrayscale);
@@ -54,21 +54,23 @@ public class PostPreviewActivity extends AppCompatActivity {
         Button btnReset = findViewById(R.id.btnReset);
 
         String photoUriStr = getIntent().getStringExtra("photoUri");
+        location = getIntent().getStringExtra("location");
+        if (location == null) {
+            location = "";
+        }
+
         if (photoUriStr != null) {
             Uri photoUri = Uri.parse(photoUriStr);
-
             originalBitmap = loadAndRotateBitmap(photoUri);
             filteredBitmap = originalBitmap;
             if (filteredBitmap != null) {
                 previewImage.setImageBitmap(filteredBitmap);
-            }
-            else {
+            } else {
                 Toast.makeText(this, "Failed to load image.", Toast.LENGTH_SHORT).show();
                 finish();
                 return;
             }
-        }
-        else {
+        } else {
             Toast.makeText(this, "No image provided.", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -86,7 +88,7 @@ public class PostPreviewActivity extends AppCompatActivity {
 
             Uri savedUri = saveBitmap(filteredBitmap, "post_" + System.currentTimeMillis());
             if (savedUri == null) {
-                Toast.makeText(this, "Failed to save filtered image.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Something went wrong. Try again later!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -108,6 +110,7 @@ public class PostPreviewActivity extends AppCompatActivity {
             resultIntent.putExtra("photoUri", savedUri.toString());
             resultIntent.putExtra("caption", caption);
             resultIntent.putExtra("hashtags", hashtags);
+            resultIntent.putExtra("location", location);
             setResult(RESULT_OK, resultIntent);
             finish();
         });
@@ -131,19 +134,25 @@ public class PostPreviewActivity extends AppCompatActivity {
         values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MyApp");
 
         Uri uri;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            uri = getContentResolver().insert(MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values);
-        } else {
-            uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-        }
-
-        if (uri != null) {
-            try (OutputStream out = getContentResolver().openOutputStream(uri)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                uri = getContentResolver().insert(MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values);
+            } else {
+                uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             }
+
+            if (uri != null) {
+                try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                    if (out != null) {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
+                    } else {
+                        throw new IOException("Failed to get output stream.");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
         return uri;
     }
@@ -153,6 +162,8 @@ public class PostPreviewActivity extends AppCompatActivity {
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
             InputStream input = getContentResolver().openInputStream(uri);
+            if (input == null) return bitmap;
+
             ExifInterface exif = new ExifInterface(input);
             input.close();
             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);

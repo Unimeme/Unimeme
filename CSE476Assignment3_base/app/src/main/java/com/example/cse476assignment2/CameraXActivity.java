@@ -63,7 +63,9 @@ public class CameraXActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera_x);
 
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        shareLocationEnabled = sharedPreferences.getBoolean(KEY_SHARE_LOCATION, false);
+        // UPDATED: Use the correct key for location tracking preference
+        shareLocationEnabled = getSharedPreferences("USER_PREFS_" + getLoggedInUser(), MODE_PRIVATE)
+                .getBoolean("LOCATION_TRACKING", false);
         username = getIntent().getStringExtra("USERNAME");
         if (username == null || username.trim().isEmpty()) {
             username = sharedPreferences.getString(KEY_USERNAME, getString(R.string.user_default));
@@ -82,7 +84,7 @@ public class CameraXActivity extends AppCompatActivity {
         setupActivityResultLaunchers();
 
         takePhotoButton.setOnClickListener(v -> checkCameraPermissionAndLaunch());
-        uploadButton.setOnClickListener(v -> uploadPost());
+        uploadButton.setOnClickListener(v -> finishAndReturnData());
         cancelButton.setOnClickListener(v -> {
             setResult(RESULT_CANCELED);
             finish();
@@ -100,6 +102,11 @@ public class CameraXActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             restoreInstanceState(savedInstanceState);
         }
+    }
+
+    private String getLoggedInUser() {
+        SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        return loginPrefs.getString("USERNAME", "default_user");
     }
 
     private void setupActivityResultLaunchers() {
@@ -263,33 +270,28 @@ public class CameraXActivity extends AppCompatActivity {
         }
     }
 
-    private void uploadPost() {
+    private void finishAndReturnData() {
         if (!hasPhoto || photoUri == null) {
             Toast.makeText(this, R.string.create_post_no_photo_error, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(KEY_LAST_POST_URI, photoUri.toString());
-        String locationToStore = "";
-        if (shareLocationEnabled && currentLocationText != null
-                && !currentLocationText.equals(getString(R.string.create_post_location_loading))) {
-            locationToStore = currentLocationText;
-        }
-        editor.putString(KEY_LAST_POST_LOCATION, locationToStore);
-        editor.putLong(KEY_LAST_POST_TIMESTAMP, System.currentTimeMillis());
-        editor.putString(KEY_LAST_POST_USERNAME, username);
-        editor.apply();
-
         Intent resultData = new Intent();
         resultData.putExtra("photoUri", photoUri.toString());
-        resultData.putExtra("caption", "");
-        setResult(RESULT_OK, resultData);
 
-        Toast.makeText(this, R.string.create_post_upload_success, Toast.LENGTH_SHORT).show();
+        String locationToReturn = "";
+        if (shareLocationEnabled && currentLocationText != null) {
+            if (!currentLocationText.equals(getString(R.string.create_post_location_loading)) &&
+                    !currentLocationText.equals(getString(R.string.create_post_location_unavailable))) {
+                locationToReturn = currentLocationText;
+            }
+        }
+        resultData.putExtra("location", locationToReturn);
+
+        setResult(RESULT_OK, resultData);
         finish();
     }
+
 
     private void restoreInstanceState(Bundle savedInstanceState) {
         String savedUri = savedInstanceState.getString(STATE_PHOTO_URI);

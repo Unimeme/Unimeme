@@ -4,13 +4,16 @@ package com.example.cse476assignment2;
 import android.net.Uri;
 import androidx.annotation.DrawableRes;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Post implements Serializable {
-
-    private final Uri imageUri;
+    private transient Uri imageUri;
+    private String imageUriString;
     private final Integer imageResId;
     private final String caption;
     private final String author;
@@ -21,7 +24,6 @@ public class Post implements Serializable {
     private final List<Comment> commentObjects;
     private boolean isLikedByCurrentUser = false;
 
-    // NEW: Add a list to hold hashtags
     private List<String> hashtags;
 
     public Post(Uri imageUri, String caption, String author, String location) {
@@ -34,6 +36,9 @@ public class Post implements Serializable {
 
     public Post(Uri imageUri, String caption, String author, String location, int likeCount, long createdAt) {
         this.imageUri = imageUri;
+        if (imageUri != null) {
+            this.imageUriString = imageUri.toString();
+        }
         this.imageResId = null;
         this.caption = caption;
         this.author = author;
@@ -42,11 +47,12 @@ public class Post implements Serializable {
         this.likeCount = likeCount;
         this.createdAt = createdAt;
         this.commentObjects = new ArrayList<>();
-        this.hashtags = new ArrayList<>(); // Initialize the list
+        this.hashtags = new ArrayList<>();
     }
 
     public Post(@DrawableRes int imageResId, String caption, String author, String location, int likeCount, long createdAt) {
         this.imageUri = null;
+        this.imageUriString = null;
         this.imageResId = imageResId;
         this.caption = caption;
         this.author = author;
@@ -55,7 +61,18 @@ public class Post implements Serializable {
         this.likeCount = likeCount;
         this.createdAt = createdAt;
         this.commentObjects = new ArrayList<>();
-        this.hashtags = new ArrayList<>(); // Initialize the list
+        this.hashtags = new ArrayList<>();
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        oos.defaultWriteObject();
+    }
+
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        if (imageUriString != null) {
+            imageUri = Uri.parse(imageUriString);
+        }
     }
 
     public Uri getImageUri() { return imageUri; }
@@ -82,7 +99,6 @@ public class Post implements Serializable {
         isLikedByCurrentUser = !isLikedByCurrentUser;
     }
 
-    // --- NEW: Methods for hashtags ---
     public List<String> getHashtags() { return hashtags; }
     public void setHashtags(List<String> hashtags) { this.hashtags = hashtags; }
 }

@@ -3,6 +3,7 @@ package com.example.cse476assignment2;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -14,6 +15,7 @@ import android.widget.Spinner;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -81,9 +83,11 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         String photoPath = result.getData().getStringExtra("photoUri");
+                        String location = result.getData().getStringExtra("location");
                         if (photoPath != null) {
                             Intent previewIntent = new Intent(this, PostPreviewActivity.class);
                             previewIntent.putExtra("photoUri", photoPath);
+                            previewIntent.putExtra("location", location);
                             postPreviewLauncher.launch(previewIntent);
                         }
                     }
@@ -96,10 +100,11 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         String photoUri = result.getData().getStringExtra("photoUri");
                         String caption = result.getData().getStringExtra("caption");
+                        String location = result.getData().getStringExtra("location");
                         ArrayList<String> hashtags = result.getData().getStringArrayListExtra("hashtags");
 
                         if (photoUri != null) {
-                            addPostToFeed(Uri.parse(photoUri), caption, "", hashtags);
+                            addPostToFeed(Uri.parse(photoUri), caption, location, hashtags);
                         }
                     }
                 }
@@ -111,6 +116,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
                     if (uri != null) {
                         Intent previewIntent = new Intent(this, PostPreviewActivity.class);
                         previewIntent.putExtra("photoUri", uri.toString());
+                        previewIntent.putExtra("location", "");
                         postPreviewLauncher.launch(previewIntent);
                     }
                 }
@@ -216,6 +222,12 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
     private void showImageSourceChooser() {
         Intent intent = new Intent(this, CameraXActivity.class);
+        intent.putExtra("USERNAME", getLoggedInUser());
         cameraXLauncher.launch(intent);
+    }
+
+    private String getLoggedInUser() {
+        SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        return loginPrefs.getString("USERNAME", "default_user");
     }
 }
