@@ -24,6 +24,7 @@
     <string name="bio_label">Bio</string>
     <string name="bio_hint">Tell others about yourself</string>
     <string name="location_tracking">Enable location tracking</string>
+    <string name="dark_mode">Dark mode</string>
     <string name="save_preferences">Save preferences</string>
     <string name="preferences_saved">Preferences saved</string>
 

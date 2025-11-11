@@ -7,6 +7,14 @@
     android:padding="24dp"
     tools:context=".PreferencesActivity">
 
+    <Button
+        android:id="@+id/buttonBackPreferences"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/bck_btn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/textViewPreferencesTitle"
         android:layout_width="0dp"
@@ -14,9 +22,10 @@
         android:text="@string/preferences_title"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:textStyle="bold"
+        android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/buttonBackPreferences" />
 
     <TextView
         android:id="@+id/textViewBioLabel"
@@ -52,6 +61,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/editTextBio" />
 
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switchDarkMode"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/dark_mode"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/switchLocationTracking" />
+
     <Button
         android:id="@+id/buttonSavePreferences"
         android:layout_width="0dp"
@@ -60,6 +79,6 @@
         android:text="@string/save_preferences"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/switchLocationTracking" />
+        app:layout_constraintTop_toBottomOf="@id/switchDarkMode" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
