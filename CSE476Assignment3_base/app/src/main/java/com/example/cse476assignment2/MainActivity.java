@@ -56,15 +56,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Apply saved dark mode preference before loading any views
-        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS", MODE_PRIVATE);
-        boolean isDarkMode = userPrefs.getBoolean("DARK_MODE", false);
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        }
-
         // Load the layout for the login screen
         setContentView(R.layout.activity_main);
 
@@ -84,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
         if (loggedIn) {
             // If logged in, retrieve the saved username and go directly to AccountActivity
             String savedUser = sharedPreferences.getString("USERNAME", "User");
+            // Apply saved dark mode preference for this user
+            applyUserDarkModePreference(savedUser);
             goToAccountPage(savedUser);
         }
 
@@ -96,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
             // Valid login if email ends with @msu.edu + password is 1234
             if (user.endsWith("@msu.edu") && pass.equals("1234")) {
                 Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+
+                // Apply saved dark mode preference for this user
+                applyUserDarkModePreference(user);
 
                 // Save login state if checkbox to "Keep me logged in" is checked
                 if (rememberMe.isChecked()) {
@@ -165,6 +161,17 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("USERNAME", username);
         startActivity(intent);
         finish();
+    }
+
+    // Helper method: apply dark mode preference for a specific user
+    private void applyUserDarkModePreference(String username) {
+        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + username, MODE_PRIVATE);
+        boolean isDarkMode = userPrefs.getBoolean("DARK_MODE", false);
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
     }
 
 

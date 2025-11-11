@@ -66,6 +66,7 @@ public class AccountActivity extends AppCompatActivity {
         // Handle "Account Settings" button click
         accountSettingsButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccountActivity.this, PreferencesActivity.class);
+            intent.putExtra("USERNAME", username);
             startActivity(intent);
         });
 

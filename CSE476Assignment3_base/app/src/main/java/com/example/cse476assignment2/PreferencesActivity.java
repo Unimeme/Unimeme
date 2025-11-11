@@ -12,7 +12,6 @@ import androidx.appcompat.widget.SwitchCompat;
 
 public class PreferencesActivity extends AppCompatActivity {
 
-    private static final String USER_PREFS = "USER_PREFS";
     private static final String KEY_BIO = "USER_BIO";
     private static final String KEY_LOCATION_TRACKING = "LOCATION_TRACKING";
     private static final String KEY_DARK_MODE = "DARK_MODE";
@@ -23,13 +22,21 @@ public class PreferencesActivity extends AppCompatActivity {
     private Button saveButton;
     private Button backButton;
     private SharedPreferences sharedPreferences;
+    private String username;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preferences);
 
-        sharedPreferences = getSharedPreferences(USER_PREFS, MODE_PRIVATE);
+        // Get username from intent
+        username = getIntent().getStringExtra("USERNAME");
+        if (username == null) {
+            username = "default_user"; // Fallback if no username provided
+        }
+
+        // Use per-user SharedPreferences
+        sharedPreferences = getSharedPreferences("USER_PREFS_" + username, MODE_PRIVATE);
 
         bioEditText = findViewById(R.id.editTextBio);
         locationSwitch = findViewById(R.id.switchLocationTracking);
