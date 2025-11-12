@@ -6,6 +6,11 @@ import android.text.TextWatcher;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.cse476assignment2.model.Req.SignUpReq;
+import com.example.cse476assignment2.model.Res.SignUpRes;
+import com.example.cse476assignment2.net.ApiClient;
+import com.example.cse476assignment2.net.ApiService;
+
 public class SignUpActivity extends AppCompatActivity {
 
     private EditText inputEmail, inputUsername, inputBio, inputPassword, inputConfirm;
@@ -43,6 +48,7 @@ public class SignUpActivity extends AppCompatActivity {
             String user  = inputUsername.getText().toString().trim();
             String pass  = inputPassword.getText().toString();
             String conf  = inputConfirm.getText().toString();
+            String bio   = inputBio.getText().toString().trim();
 
             // Email must end with @msu.edu
             if (!email.endsWith("@msu.edu")) {
@@ -78,6 +84,41 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
+            String profileUrl = null;
+
+            ApiService api = ApiClient.get();
+            SignUpReq body = new SignUpReq(user, pass, bio, profileUrl);
+
+            buttonCreate.setEnabled(false);
+
+
+            api.signUp(body).enqueue(new retrofit2.Callback<SignUpRes>() {
+                @Override public void onResponse(retrofit2.Call<SignUpRes> call,
+                                                 retrofit2.Response<SignUpRes> response) {
+                    buttonCreate.setEnabled(true);
+                    if (!response.isSuccessful() || response.body() == null) {
+                        Toast.makeText(SignUpActivity.this, "Sign up failed. ("+response.code()+")",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    SignUpRes res = response.body();
+                    if (res.ok) {
+                        Toast.makeText(SignUpActivity.this,
+                                getString(R.string.signup_success) + " (id=" + res.id + ")",
+                                Toast.LENGTH_SHORT).show();
+                        finish();
+                    } else {
+                        Toast.makeText(SignUpActivity.this,
+                                "Sign up failed: " + res.error, Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override public void onFailure(retrofit2.Call<SignUpRes> call, Throwable t) {
+                    buttonCreate.setEnabled(true);
+                    Toast.makeText(SignUpActivity.this,
+                            "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
             // UI only
             Toast.makeText(this, getString(R.string.signup_success), Toast.LENGTH_SHORT).show();
             finish();
