@@ -12,7 +12,7 @@ final class Database
 
     public function __construct()
     {
-        $cfg = $this->readMysqlFromIni();
+        $cfg = $this->readMysqlFromIniWithFallback();
 
         $dsn = sprintf(
             'mysql:host=%s;port=%d;dbname=%s;charset=%s',
@@ -22,21 +22,12 @@ final class Database
             $cfg['charset']
         );
 
-        // $options = [
-        //     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        //     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        //     PDO::ATTR_EMULATE_PREPARES   => false,
-        // ];
         $options = [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_TIMEOUT            => 5,
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT            => 5,
         ];
-
-
-
-        // Optional TLS if provided
         if (!empty($cfg['ssl_ca'])) {
             $options[\PDO::MYSQL_ATTR_SSL_CA] = $cfg['ssl_ca'];
         }
@@ -44,47 +35,56 @@ final class Database
         try {
             $this->pdo = new PDO($dsn, $cfg['username'], $cfg['password'], $options);
         } catch (PDOException $e) {
-            throw $e;
-            
+            error_log('DB_CONNECTION_FAILED: '.$e->getMessage());
             http_response_code(500);
             header('Content-Type: application/json');
-            echo json_encode(['error' => 'DB_CONNECTION_FAILED']);
-            // You may also log $e->getMessage() to a file
+            echo json_encode(['ok'=>false,'error'=>'db_connect_failed']);
             exit;
         }
     }
 
-    public function pdo(): PDO
-    {
-        return $this->pdo;
-    }
+    public function pdo(): PDO { return $this->pdo; }
 
-    /** Load [mysql] block from the active php.ini */
-    private function readMysqlFromIni(): array
+    private function readMysqlFromIniWithFallback(): array
     {
-        $iniPath = \php_ini_loaded_file();
-        if ($iniPath === false) {
-            throw new \RuntimeException('Unable to locate php.ini; cannot read [mysql] settings.');
+        $envHost = getenv('DB_HOST');
+        if ($envHost) {
+            return [
+                'host'     => $envHost,
+                'port'     => (int)(getenv('DB_PORT') ?: 3306),
+                'database' => (string)(getenv('DB_NAME') ?: ''),
+                'username' => (string)(getenv('DB_USER') ?: ''),
+                'password' => (string)(getenv('DB_PASS') ?: ''),
+                'charset'  => (string)(getenv('DB_CHARSET') ?: 'utf8mb4'),
+                'ssl_ca'   => getenv('DB_SSL_CA') ?: null,
+            ];
         }
 
-        $ini = \parse_ini_file($iniPath, true, \INI_SCANNER_TYPED);
-        $s   = $ini['mysql'] ?? [];
-
-        // Minimal validation
-        foreach (['host','database','username','password'] as $k) {
-            if (!isset($s[$k]) || $s[$k] === '') {
-                throw new \RuntimeException("Missing [mysql]::$k in php.ini");
+        $iniPath = \php_ini_loaded_file();
+        if ($iniPath !== false) {
+            $ini = \parse_ini_file($iniPath, true, \INI_SCANNER_TYPED) ?: [];
+            $s   = $ini['mysql'] ?? [];
+            if (!empty($s['host']) && !empty($s['database']) && !empty($s['username']) && isset($s['password'])) {
+                return [
+                    'host'     => (string)$s['host'],
+                    'port'     => (int)   ($s['port'] ?? 3306),
+                    'database' => (string)$s['database'],
+                    'username' => (string)$s['username'],
+                    'password' => (string)$s['password'],
+                    'charset'  => (string)($s['charset'] ?? 'utf8mb4'),
+                    'ssl_ca'   => isset($s['ssl_ca']) ? (string)$s['ssl_ca'] : null,
+                ];
             }
         }
 
         return [
-            'host'     => (string)($s['host'] ?? '127.0.0.1'),
-            'port'     => (int)   ($s['port'] ?? 3306),
-            'database' => (string)($s['database'] ?? ''),
-            'username' => (string)($s['username'] ?? ''),
-            'password' => (string)($s['password'] ?? ''),
-            'charset'  => (string)($s['charset']  ?? 'utf8mb4'),
-            'ssl_ca'   => isset($s['ssl_ca']) ? (string)$s['ssl_ca'] : null,
+            'host'     => 'mysql-user.egr.msu.edu',
+            'port'     => 3306,
+            'database' => 'cse476fs25group6',
+            'username' => 'cse476fs25group6',
+            'password' => 'iegh7luziH@o',
+            'charset'  => 'utf8mb4',
+            'ssl_ca'   => null,
         ];
     }
 }

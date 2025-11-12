@@ -1,135 +1,143 @@
 <?php
-// declare(strict_types=1);
+declare(strict_types=1);
 
-// use App\Security;
-// use PDO;
+final class UsersController
+{
+    private PDO $pdo;
+    public function __construct(PDO $pdo){ $this->pdo = $pdo; }
 
-final class UsersController {
-    /** @var PDO */
-    private \PDO $pdo;
+    private function readBody(): array {
+        $raw  = file_get_contents('php://input') ?: '';
+        $data = json_decode($raw, true);
+        if (!is_array($data)) $data = $_POST;
 
-    public function __construct(PDO $pdo) {
-        $this->pdo = $pdo;
+        $profileUrl = $data['profile_url']
+            ?? $data['profileUrl']
+            ?? $data['picUrl']
+            ?? $data['PicURL']
+            ?? null;
+
+        return [
+            'username'    => $data['username']    ?? $data['UserName'] ?? null,
+            'password'    => $data['password']    ?? $data['Password'] ?? null,
+            'bio'         => $data['bio']         ?? $data['Bio']      ?? null,
+            'profile_url' => $profileUrl,
+        ];
     }
 
-    // 1) CreateUser (POST)
-    // Body: { "UserName": string, "Password": string, "Bio"?: string, "PicURL"?: string }
-    public function createUser(): void {
-        $b   = json_decode(file_get_contents('php://input'), true) ?? [];
-        $u   = trim((string)($b['UserName'] ?? ''));
-        $p   = (string)($b['Password'] ?? '');
-        $bio = (string)($b['Bio'] ?? '');
-        $pic = (string)($b['PicURL'] ?? ''); // maps to profile_url
+    public function createUser(): void
+    {
+        $in = $this->readBody();
+        foreach (['username','password'] as $k) {
+            if (empty($in[$k])) {
+                http_response_code(400);
+                echo json_encode(['ok'=>false,'error'=>"missing:$k"]);
+                return;
+            }
+        }
 
-        if ($u === '' || $p === '') {
+        try {
+            $stmt = $this->pdo->prepare(
+                "INSERT INTO users (username,password_hash,bio,profile_url,created_at)
+                 VALUES (?,?,?,?,NOW())"
+            );
+            $stmt->execute([
+                $in['username'],
+                password_hash($in['password'], PASSWORD_DEFAULT),
+                $in['bio'],
+                $in['profile_url'],
+            ]);
+            echo json_encode(['ok'=>true,'id'=>$this->pdo->lastInsertId()]);
+        } catch (Throwable $e) {
+            error_log('UsersController::createUser FAIL: '.$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
+        }
+    }
+
+    public function updateUser(): void
+    {
+        $in = $this->readBody();
+        if (empty($in['username'])) {
             http_response_code(400);
-            echo json_encode(['IsSuccess' => false, 'error' => 'Missing required fields']);
+            echo json_encode(['ok'=>false,'error'=>'missing:username']);
             return;
         }
 
-        $hash = \App\Security::hashPassword($p);
-        $sql  = "INSERT INTO users (username, password_hash, bio, profile_url, created_at)
-                 VALUES (:u, :ph, :bio, :pic, UTC_TIMESTAMP())";
-        $stmt = $this->pdo->prepare($sql);
-        $ok   = $stmt->execute([
-            ':u'   => $u,
-            ':ph'  => $hash,
-            ':bio' => $bio !== '' ? $bio : null,
-            ':pic' => $pic !== '' ? $pic : null
-        ]);
-
-        echo json_encode([
-            'IsSuccess' => $ok,
-            'userId'    => $ok ? (int)$this->pdo->lastInsertId() : null
-        ]);
+        try {
+            $stmt = $this->pdo->prepare(
+                "UPDATE users
+                   SET bio = COALESCE(?, bio),
+                       profile_url = COALESCE(?, profile_url)
+                 WHERE username = ?"
+            );
+            $stmt->execute([
+                $in['bio'],
+                $in['profile_url'],
+                $in['username'],
+            ]);
+            echo json_encode(['ok'=>true,'updated'=>$stmt->rowCount()]);
+        } catch (Throwable $e) {
+            error_log('UsersController::updateUser FAIL: '.$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
+        }
     }
 
-    // 2) UpdateUser (POST) — partial update
-    // Body: { "UserName": string, "Password"?: string, "Bio"?: string, "PicURL"?: string }
-    public function updateUser(): void {
-        $b   = json_decode(file_get_contents('php://input'), true) ?? [];
-        $u   = trim((string)($b['UserName'] ?? ''));
-        $p   = (string)($b['Password'] ?? '');
-        $bio = (string)($b['Bio'] ?? '');
-        $pic = (string)($b['PicURL'] ?? '');
-
-        if ($u === '') {
+    public function deleteUser(): void
+    {
+        $in = $this->readBody();
+        if (empty($in['username'])) {
             http_response_code(400);
-            echo json_encode(['IsSuccess' => false, 'error' => 'UserName required']);
+            echo json_encode(['ok'=>false,'error'=>'missing:username']);
             return;
         }
-
-        $fields = [];
-        $params = [':u' => $u];
-
-        if ($p !== '') {
-            $fields[]       = 'password_hash = :ph';
-            $params[':ph']  = \App\Security::hashPassword($p);
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM users WHERE username = ?");
+            $stmt->execute([$in['username']]);
+            echo json_encode(['ok'=>true,'deleted'=>$stmt->rowCount()]);
+        } catch (Throwable $e) {
+            error_log('UsersController::deleteUser FAIL: '.$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
         }
-        if ($bio !== '') {
-            $fields[]       = 'bio = :bio';
-            $params[':bio'] = $bio;
-        }
-        if ($pic !== '') {
-            $fields[]        = 'profile_url = :pic';
-            $params[':pic']  = $pic;
-        }
-
-        if (!$fields) {
-            echo json_encode(['IsSuccess' => false, 'error' => 'Nothing to update']);
-            return;
-        }
-
-        $sql = "UPDATE users SET ".implode(', ', $fields)." WHERE username = :u";
-        $ok  = $this->pdo->prepare($sql)->execute($params);
-
-        echo json_encode(['IsSuccess' => $ok]);
     }
 
-    // 3) DeleteUser (DELETE) — body: username,password
-    public function deleteUser(): void {
-        $raw = file_get_contents('php://input');
-        $b   = json_decode($raw, true);
-        if (!is_array($b)) { parse_str($raw, $b); }
+    public function getAllUsers(): void
+    {
+        try {
+            $rows = $this->pdo
+                ->query("SELECT user_id,username,bio,profile_url,created_at FROM users ORDER BY user_id DESC")
+                ->fetchAll();
+            echo json_encode(['ok'=>true,'users'=>$rows]);
+        } catch (Throwable $e) {
+            error_log('UsersController::getAllUsers FAIL: '.$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
+        }
+    }
 
-        $u = trim((string)($b['username'] ?? ''));
-        $p = (string)($b['password'] ?? '');
-
-        if ($u === '' || $p === '') {
+    public function getUser(): void
+    {
+        $username = $_GET['username'] ?? null;
+        if (!$username) {
             http_response_code(400);
-            echo json_encode(['IsSuccess' => false, 'error' => 'bad_request']);
+            echo json_encode(['ok'=>false,'error'=>'missing:username']);
             return;
         }
-
-        $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE username = :u");
-        $stmt->execute([':u' => $u]);
-        $row = $stmt->fetch();
-
-        if (!$row || !\App\Security::verifyPassword($p, (string)$row['password_hash'])) {
-            echo json_encode(['IsSuccess' => false, 'error' => 'auth_failed']);
-            return;
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT user_id,username,bio,profile_url,created_at
+                   FROM users WHERE username = ?"
+            );
+            $stmt->execute([$username]);
+            $row = $stmt->fetch() ?: null;
+            if (!$row) { http_response_code(404); echo json_encode(['ok'=>false,'error'=>'not_found']); return; }
+            echo json_encode(['ok'=>true,'user'=>$row]);
+        } catch (Throwable $e) {
+            error_log('UsersController::getUser FAIL: '.$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
         }
-
-        $ok = $this->pdo->prepare("DELETE FROM users WHERE username = :u")->execute([':u' => $u]);
-        echo json_encode(['IsSuccess' => $ok]);
-    }
-
-    // 4a) GetAllUsers (GET)
-    public function getAllUsers(): void {
-        $rows = $this->pdo
-            ->query("SELECT user_id, username, bio, profile_url, created_at FROM users ORDER BY user_id")
-            ->fetchAll();
-        echo json_encode(['Users' => $rows]);
-    }
-
-    // 4b) GetUser (GET ?username=)
-    public function getUser(): void {
-        $u = trim((string)($_GET['username'] ?? ''));
-        $stmt = $this->pdo->prepare(
-            "SELECT user_id, username, bio, profile_url, created_at
-             FROM users WHERE username = :u"
-        );
-        $stmt->execute([':u' => $u]);
-        echo json_encode($stmt->fetch() ?: []);
     }
 }
