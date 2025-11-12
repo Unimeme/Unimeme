@@ -1,127 +1,104 @@
 package com.example.cse476assignment2;
 
-import android.Manifest;
-import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.app.ActivityCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
-import android.widget.CheckBox;
+import com.example.cse476assignment2.net.ApiClient;
+import com.example.cse476assignment2.net.ApiService;
+import com.example.cse476assignment2.model.Req.LoginReq;
+import com.example.cse476assignment2.model.Res.LoginRes;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.GeofencingClient;
-import com.google.android.gms.location.GeofencingRequest;
-import android.location.Location;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
-// The following code is written based on YouTube videos I watched
-// ChatGPT was used to beautify code and add comments in places they were not in already
 public class MainActivity extends AppCompatActivity {
 
-    // Declare UI elements and shared preferences
     EditText username, password;
     Button loginButton, newMemberButton;
     CheckBox rememberMe;
     SharedPreferences sharedPreferences;
 
-    // Coordinates for MSU center (approx.)
-    private static final double MSU_LAT = 42.7311;
-    private static final double MSU_LON = -84.4875;
-    private static final float RADIUS_METERS = 1000f;
-
-    private static final int LOCATION_PERMISSION_REQUEST = 123;
-    private GeofencingClient geofencingClient;
-    private PendingIntent geofencePendingIntent;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Load the layout for the login screen
         setContentView(R.layout.activity_main);
 
-        // Link UI elements to their XML IDs
         username = findViewById(R.id.username);
         password = findViewById(R.id.password);
         loginButton = findViewById(R.id.loginButton);
         rememberMe = findViewById(R.id.rememberMe);
-        newMemberButton = findViewById(R.id.buttonNewMember); // ✅ New Button
+        newMemberButton = findViewById(R.id.buttonNewMember);
 
-
-        // Initialize SharedPreferences to store login data
         sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
 
-        // Check if the user was previously logged in (auto-login feature)
         boolean loggedIn = sharedPreferences.getBoolean("LOGGED_IN", false);
         if (loggedIn) {
-            // If logged in, retrieve the saved username and go directly to AccountActivity
             String savedUser = sharedPreferences.getString("USERNAME", "User");
-            // Apply saved dark mode preference for this user
             applyUserDarkModePreference(savedUser);
             goToAccountPage(savedUser);
         }
 
-
-        // Handle login button click
         loginButton.setOnClickListener(v -> {
-            String user = username.getText().toString();
-            String pass = password.getText().toString();
+            String user = username.getText().toString().trim();
+            String pass = password.getText().toString().trim();
 
-            // Valid login if email ends with @msu.edu + password is 1234
-            if (user.endsWith("@msu.edu") && pass.equals("1234")) {
-                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+            if (user.isEmpty() || pass.isEmpty()) {
+                Toast.makeText(this, "Please enter username and password", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                // Apply saved dark mode preference for this user
-                applyUserDarkModePreference(user);
+            ApiService api = ApiClient.get();
+            LoginReq req = new LoginReq(user, pass);
 
-                // Save login state if checkbox to "Keep me logged in" is checked
-                if (rememberMe.isChecked()) {
-                    sharedPreferences.edit()
-                            .putBoolean("LOGGED_IN", true)
-                            .putString("USERNAME", user)
-                            .apply();
+            api.login(req).enqueue(new Callback<LoginRes>() {
+                @Override
+                public void onResponse(Call<LoginRes> call, Response<LoginRes> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        LoginRes res = response.body();
+                        if (res.ok && res.user != null) {
+                            Toast.makeText(MainActivity.this, "Welcome " + res.user.username, Toast.LENGTH_SHORT).show();
+
+                            if (rememberMe.isChecked()) {
+                                sharedPreferences.edit()
+                                        .putBoolean("LOGGED_IN", true)
+                                        .putString("USERNAME", res.user.username)
+                                        .apply();
+                            }
+
+                            applyUserDarkModePreference(res.user.username);
+                            goToAccountPage(res.user.username);
+                        } else {
+                            Toast.makeText(MainActivity.this, "Login failed: " + res.error, Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(MainActivity.this, "Server error (" + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    }
                 }
 
-                // Navigate to AccountActivity with username passed as extra
-                goToAccountPage(user);
-            }
-            // Error if username or password fields are empty
-            else if (user.isEmpty() || pass.isEmpty()) {
-                Toast.makeText(this, "Please enter username and password", Toast.LENGTH_SHORT).show();
-            }
-            // Error for invalid credentials
-            else {
-                Toast.makeText(this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
-            }
+                @Override
+                public void onFailure(Call<LoginRes> call, Throwable t) {
+                    Toast.makeText(MainActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
-        // new member create button
         newMemberButton.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SignUpActivity.class);
             startActivity(intent);
         });
     }
 
-    // Save current input values if activity is killed (e.g., screen rotation)
+    // 상태 저장
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -130,7 +107,6 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("REMEMBER_ME", rememberMe.isChecked());
     }
 
-    // Restore saved input values after rotation or recreation
     @Override
     protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
@@ -139,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
         rememberMe.setChecked(savedInstanceState.getBoolean("REMEMBER_ME", false));
     }
 
-    // Save temporary input values when activity is paused
     @Override
     protected void onPause() {
         super.onPause();
@@ -150,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    // Restore input values when activity resumes
     @Override
     protected void onResume() {
         super.onResume();
@@ -159,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
         rememberMe.setChecked(sharedPreferences.getBoolean("REMEMBER_ME", false));
     }
 
-    // Helper method: move to AccountActivity, passing the username
     private void goToAccountPage(String username) {
         Intent intent = new Intent(MainActivity.this, AccountActivity.class);
         intent.putExtra("USERNAME", username);
@@ -167,7 +140,6 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    // Helper method: apply dark mode preference for a specific user
     private void applyUserDarkModePreference(String username) {
         SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + username, MODE_PRIVATE);
         boolean isDarkMode = userPrefs.getBoolean("DARK_MODE", false);
@@ -177,6 +149,4 @@ public class MainActivity extends AppCompatActivity {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         }
     }
-
-
 }

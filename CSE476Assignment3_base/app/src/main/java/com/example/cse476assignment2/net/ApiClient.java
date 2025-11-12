@@ -20,9 +20,8 @@ public class ApiClient {
                     .readTimeout(20, TimeUnit.SECONDS)
                     .build();
 
-            // Retrofit baseUrl 은 반드시 / 로 끝나야 함
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl("https://www.egr.msu.edu/") // 호스트만 베이스로
+                    .baseUrl("https://www.egr.msu.edu/")
                     .addConverterFactory(GsonConverterFactory.create())
                     .client(client)
                     .build();
