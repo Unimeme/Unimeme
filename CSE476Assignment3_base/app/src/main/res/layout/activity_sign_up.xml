@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/login_background">
+
+    <LinearLayout
+        android:orientation="vertical" android:padding="24dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+
+        <!-- Email (must end with @msu.edu) -->
+        <EditText
+            android:id="@+id/inputEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="MSU Email (must end with @msu.edu)"
+            android:inputType="textEmailAddress"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+        <!-- Username (required, uniqueness = backend later) -->
+        <EditText
+            android:id="@+id/inputUsername"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/signup_username_hint"
+            android:inputType="textPersonName"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Bio (optional) -->
+        <EditText
+            android:id="@+id/inputBio"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/signup_bio_hint"
+            android:inputType="textCapSentences|textMultiLine"
+            android:minLines="2"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Password -->
+        <EditText
+            android:id="@+id/inputPassword"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/signup_password_hint"
+            android:inputType="textPassword"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Confirm -->
+        <EditText
+            android:id="@+id/inputConfirm"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/signup_confirm_hint"
+            android:inputType="textPassword"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Required consents -->
+        <CheckBox
+            android:id="@+id/checkTos"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/tos_privacy_consent"
+            android:layout_marginTop="8dp"/>
+
+        <CheckBox
+            android:id="@+id/checkData"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/data_consent"
+            android:layout_marginTop="4dp"/>
+
+        <!-- View Terms (image-styled button) -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/buttonViewTerms"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/view_terms"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_background_1"
+            android:backgroundTint="#D3D3D3"
+            android:textColor="@android:color/black"
+            android:drawableStart="@android:drawable/ic_menu_info_details"
+            android:drawablePadding="12dp"
+            android:paddingStart="20dp" android:paddingEnd="20dp"/>
+
+        <!-- Create account CTA (disabled until form valid) -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/buttonCreateAccount"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/signup"
+            android:enabled="false"
+            android:backgroundTint="#FFFFFF"
+            android:textColor="#000000"/>
+    </LinearLayout>
+</ScrollView>
