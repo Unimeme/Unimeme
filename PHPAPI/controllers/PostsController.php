@@ -97,7 +97,7 @@ final class PostsController {
 
         $out=[]; foreach($posts as $p0){ $pid=(int)$p0['post_id']; $out[]=[
             'post_id'=>$pid,'created_at'=>$p0['created_at'],'image_url'=>$p0['image_url'],'caption'=>$p0['caption'],
-            'author'=>['user_id'=>(int)$p0['user_id'],'username'=>$p0['username'],'pic'=>$p0['profile_pic_url']],
+            'author'=>['user_id'=>(int)$p0['user_id'],'username'=>$p0['username'],'pic'=>$p0['profile_url']],
             'location'=>$p0['location_id']?[
                 'location_id'=>(int)$p0['location_id'],'name'=>$p0['location_name'],
                 'latitude'=>$p0['latitude'],'longitude'=>$p0['longitude']
