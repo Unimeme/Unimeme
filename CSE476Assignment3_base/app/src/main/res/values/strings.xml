@@ -148,5 +148,23 @@
     <string name="create_post_upload">Upload Post</string>
     <string name="create_post_cancel">Cancel</string>
 
+    <!-- Sign up / terms -->
+    <string name="signup">Create account</string>
+    <string name="new_member">New member?</string>
+    <string name="view_terms">View Terms &amp; Privacy</string>
+    <string name="tos_privacy_consent">I agree to the Terms of Service and Privacy Policy</string>
+    <string name="data_consent">I consent to personal data collection</string>
+
+    <string name="signup_username_hint">Username</string>
+    <string name="signup_bio_hint">Bio (optional)</string>
+    <string name="signup_password_hint">Password (min 8: letters &amp; digits)</string>
+    <string name="signup_confirm_hint">Confirm password</string>
+
+    <string name="err_username_required">Username is required</string>
+    <string name="err_password_invalid">Password must be 8+ chars incl. a letter and a digit</string>
+    <string name="err_password_mismatch">Passwords do not match</string>
+    <string name="err_consent_required">Please accept the required consents</string>
+    <string name="signup_success">Account created (UI only)</string>
+
 
 </resources>
