@@ -10,67 +10,154 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SwitchCompat;
 
+import com.example.cse476assignment2.model.Req.UpdateUserReq;
+import com.example.cse476assignment2.model.Res.UpdateUserRes;
+import com.example.cse476assignment2.net.ApiClient;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class PreferencesActivity extends AppCompatActivity {
 
-    private static final String KEY_DISPLAY_NAME = "USER_DISPLAY_NAME"; // NEW
+    private static final String KEY_DISPLAY_NAME = "USER_DISPLAY_NAME";
     private static final String KEY_BIO = "USER_BIO";
-    private static final String KEY_LOCATION_TRACKING = "LOCATION_TRACKING";
+    private static final String KEY_LOCATION = "LOCATION_TRACKING";
     private static final String KEY_DARK_MODE = "DARK_MODE";
+    private static final String KEY_EMAIL = "USER_EMAIL"; // school email
 
-    private EditText displayNameEditText; // NEW
-    private EditText bioEditText;
-    private SwitchCompat locationSwitch;
-    private SwitchCompat darkModeSwitch;
-    private Button saveButton;
-    private Button backButton;
-    private SharedPreferences sharedPreferences;
-    private String username;
+    private EditText displayNameInput, bioInput;
+    private SwitchCompat locationSwitch, darkModeSwitch;
+    private Button saveButton, backButton;
+
+    private SharedPreferences userPrefs;
+    private String username; // login/server username
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preferences);
 
+        // Load username from Intent or LOGIN_PREFS
         username = getIntent().getStringExtra("USERNAME");
         if (username == null) {
-            username = "default_user";
+            SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+            username = loginPrefs.getString("USERNAME", "default_user");
         }
 
-        sharedPreferences = getSharedPreferences("USER_PREFS_" + username, MODE_PRIVATE);
+        // User-specific SharedPreferences
+        userPrefs = getSharedPreferences("USER_PREFS_" + username, MODE_PRIVATE);
 
-        displayNameEditText = findViewById(R.id.editTextDisplayName); // NEW
-        bioEditText = findViewById(R.id.editTextBio);
+        // Bind views
+        displayNameInput = findViewById(R.id.editTextDisplayName);
+        bioInput = findViewById(R.id.editTextBio);
         locationSwitch = findViewById(R.id.switchLocationTracking);
         darkModeSwitch = findViewById(R.id.switchDarkMode);
         saveButton = findViewById(R.id.buttonSavePreferences);
         backButton = findViewById(R.id.buttonBackPreferences);
 
-        // Load saved preferences
-        displayNameEditText.setText(sharedPreferences.getString(KEY_DISPLAY_NAME, "")); // NEW
-        bioEditText.setText(sharedPreferences.getString(KEY_BIO, ""));
-        locationSwitch.setChecked(sharedPreferences.getBoolean(KEY_LOCATION_TRACKING, false));
-        darkModeSwitch.setChecked(sharedPreferences.getBoolean(KEY_DARK_MODE, false));
+        // Load existing values
+        displayNameInput.setText(userPrefs.getString(KEY_DISPLAY_NAME, ""));
+        bioInput.setText(userPrefs.getString(KEY_BIO, ""));
+        locationSwitch.setChecked(userPrefs.getBoolean(KEY_LOCATION, false));
+        darkModeSwitch.setChecked(userPrefs.getBoolean(KEY_DARK_MODE, false));
 
-        darkModeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
+        // Dark mode switch
+        darkModeSwitch.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            } else {
+            else
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        });
+
+        saveButton.setOnClickListener(v -> savePreferences());
+        backButton.setOnClickListener(v -> finish());
+    }
+
+    private void savePreferences() {
+
+        String newDisplayName = displayNameInput.getText().toString().trim();
+        String newBio = bioInput.getText().toString().trim();
+        String storedEmail = userPrefs.getString(KEY_EMAIL, null);
+
+        // Save local preferences first
+        userPrefs.edit()
+                .putString(KEY_DISPLAY_NAME, newDisplayName)
+                .putString(KEY_BIO, newBio)
+                .putBoolean(KEY_LOCATION, locationSwitch.isChecked())
+                .putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked())
+                .apply();
+
+        // Determine if username change is requested
+        String newUsernameForServer =
+                (!newDisplayName.isEmpty() && !newDisplayName.equals(username))
+                        ? newDisplayName
+                        : null;
+
+        String bioForServer = newBio.isEmpty() ? null : newBio;
+
+        // Build server request
+        UpdateUserReq req = new UpdateUserReq(username, newUsernameForServer, bioForServer);
+
+        ApiClient.get().updateUser(req).enqueue(new Callback<UpdateUserRes>() {
+            @Override
+            public void onResponse(Call<UpdateUserRes> call, Response<UpdateUserRes> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(PreferencesActivity.this,
+                            "Server error: " + response.code(),
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                UpdateUserRes body = response.body();
+
+                if (!body.ok) {
+                    String msg = "Update failed: " + body.error;
+                    Toast.makeText(PreferencesActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Handle username change
+                if (newUsernameForServer != null) {
+
+                    SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+                    loginPrefs.edit()
+                            .putString("USERNAME", newUsernameForServer)
+                            .apply();
+
+                    SharedPreferences newUserPrefs =
+                            getSharedPreferences("USER_PREFS_" + newUsernameForServer, MODE_PRIVATE);
+
+                    SharedPreferences.Editor e = newUserPrefs.edit();
+                    e.putString(KEY_DISPLAY_NAME, newDisplayName);
+                    e.putString(KEY_BIO, newBio);
+                    e.putBoolean(KEY_LOCATION, locationSwitch.isChecked());
+                    e.putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked());
+
+                    // Keep user's school email tied to new username
+                    if (storedEmail != null) {
+                        e.putString(KEY_EMAIL, storedEmail);
+                    }
+
+                    e.apply();
+
+                    // Update local reference
+                    username = newUsernameForServer;
+                    userPrefs = newUserPrefs;
+                }
+
+                Toast.makeText(PreferencesActivity.this,
+                        "Preferences successfully updated.",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Call<UpdateUserRes> call, Throwable t) {
+                Toast.makeText(PreferencesActivity.this,
+                        "Network error: " + t.getMessage(),
+                        Toast.LENGTH_SHORT).show();
             }
         });
-
-        saveButton.setOnClickListener(v -> {
-            sharedPreferences
-                    .edit()
-                    .putString(KEY_DISPLAY_NAME, displayNameEditText.getText().toString()) // NEW
-                    .putString(KEY_BIO, bioEditText.getText().toString())
-                    .putBoolean(KEY_LOCATION_TRACKING, locationSwitch.isChecked())
-                    .putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked())
-                    .apply();
-
-            Toast.makeText(PreferencesActivity.this, R.string.preferences_saved, Toast.LENGTH_SHORT).show();
-        });
-
-        backButton.setOnClickListener(v -> finish());
     }
 }

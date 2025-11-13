@@ -3,6 +3,7 @@ package com.example.cse476assignment2;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ColorMatrix;
@@ -20,10 +21,23 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.exifinterface.media.ExifInterface;
 import android.provider.MediaStore;
 
+import com.example.cse476assignment2.model.Req.CreatePostReq;
+import com.example.cse476assignment2.model.Res.CreatePostRes;
+import com.example.cse476assignment2.model.Res.UploadImageRes;
+import com.example.cse476assignment2.net.ApiClient;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class PostPreviewActivity extends AppCompatActivity {
 
@@ -86,12 +100,14 @@ public class PostPreviewActivity extends AppCompatActivity {
                 return;
             }
 
+            // 1) Save bitmap to gallery
             Uri savedUri = saveBitmap(filteredBitmap, "post_" + System.currentTimeMillis());
             if (savedUri == null) {
                 Toast.makeText(this, "Something went wrong. Try again later!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
+            // 2) Prepare hashtags
             ArrayList<String> hashtags = new ArrayList<>();
             String rawHashtags = hashtagInput.getText().toString().trim();
             if (!rawHashtags.isEmpty()) {
@@ -106,12 +122,17 @@ public class PostPreviewActivity extends AppCompatActivity {
                 }
             }
 
+            // 3) Send result back to previous activity (so your UI still works offline)
             Intent resultIntent = new Intent();
             resultIntent.putExtra("photoUri", savedUri.toString());
             resultIntent.putExtra("caption", caption);
             resultIntent.putExtra("hashtags", hashtags);
             resultIntent.putExtra("location", location);
             setResult(RESULT_OK, resultIntent);
+
+            // 4) upload to server in background
+            uploadToServerAndCreatePost(filteredBitmap, caption);
+
             finish();
         });
 
@@ -201,4 +222,122 @@ public class PostPreviewActivity extends AppCompatActivity {
         filteredBitmap = newBitmap;
         previewImage.setImageBitmap(filteredBitmap);
     }
+
+    private void uploadToServerAndCreatePost(Bitmap bitmap, String caption) {
+
+        // Get username/password from SharedPreferences
+        SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = loginPrefs.getString("USERNAME", null);
+        String password = loginPrefs.getString("PASSWORD", null);  // make sure you save this at login
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in. Cannot upload post.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1) Save bitmap to a temp file in cache dir
+        File cacheFile = new File(getCacheDir(), "upload_post_" + System.currentTimeMillis() + ".jpg");
+        try (FileOutputStream fos = new FileOutputStream(cacheFile)) {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to prepare image file.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 2) Build multipart request for upload
+        RequestBody usernameBody = RequestBody.create(
+                okhttp3.MultipartBody.FORM, username);
+
+        RequestBody passwordBody = RequestBody.create(
+                okhttp3.MultipartBody.FORM, password);
+
+        RequestBody imgBody = RequestBody.create(
+                okhttp3.MediaType.parse("image/jpeg"), cacheFile);
+
+        MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                "image", cacheFile.getName(), imgBody);
+
+        // 3) Call uploadPostImage
+        ApiClient.get().uploadPostImage(usernameBody, passwordBody, imagePart)
+                .enqueue(new Callback<UploadImageRes>() {
+                    @Override
+                    public void onResponse(Call<UploadImageRes> call,
+                                           Response<UploadImageRes> response) {
+                        if (!response.isSuccessful() || response.body() == null) {
+                            Toast.makeText(PostPreviewActivity.this,
+                                    "Image upload failed: " + response.code(),
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        UploadImageRes res = response.body();
+                        if (!res.IsSuccess || res.imageUrl == null) {
+                            Toast.makeText(PostPreviewActivity.this,
+                                    "Image upload failed: " + res.error,
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        // 4) If upload succeeded, create the post with the returned imageUrl
+                        createPostOnServer(username, password, res.imageUrl, caption);
+                    }
+
+                    @Override
+                    public void onFailure(Call<UploadImageRes> call, Throwable t) {
+                        Toast.makeText(PostPreviewActivity.this,
+                                "Image upload error: " + t.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+    private void createPostOnServer(String username,
+                                    String password,
+                                    String imageUrl,
+                                    String caption) {
+
+        // For now, we send null for locationId (or set an actual id if you have one)
+        Integer locationId = null;
+
+        CreatePostReq body = new CreatePostReq(
+                username,
+                password,
+                imageUrl,
+                caption,
+                locationId
+        );
+
+        ApiClient.get().createPost(body).enqueue(new Callback<CreatePostRes>() {
+            @Override
+            public void onResponse(Call<CreatePostRes> call, Response<CreatePostRes> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(PostPreviewActivity.this,
+                            "Create post failed: " + response.code(),
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                CreatePostRes res = response.body();
+                if (!res.IsSuccess) {
+                    Toast.makeText(PostPreviewActivity.this,
+                            "Create post failed: " + res.error,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Toast.makeText(PostPreviewActivity.this,
+                        "Post uploaded!",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Call<CreatePostRes> call, Throwable t) {
+                Toast.makeText(PostPreviewActivity.this,
+                        "Create post error: " + t.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
 }

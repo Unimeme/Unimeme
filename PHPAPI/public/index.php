@@ -53,6 +53,9 @@ try {
     case $path === '/api/users/create' && $method === 'POST':
       (new UsersController($pdo))->createUser();  break;
 
+    case $path === '/api/users/login' && $method === 'POST':
+      (new UsersController($pdo))->login();       break;
+
     case $path === '/api/users/update' && $method === 'POST':
       (new UsersController($pdo))->updateUser();  break;
 
@@ -68,6 +71,9 @@ try {
     // ===== Posts =====
     case $path === '/api/posts/create' && $method === 'POST':
       (new PostsController($pdo))->createPost();  break;
+
+     case $path === '/api/posts/upload' && $method === 'POST':
+        (new PostsController($pdo))->uploadPostImage();  break;
 
     case $path === '/api/posts/delete' && $method === 'DELETE':
       (new PostsController($pdo))->deletePost();  break;
@@ -89,7 +95,7 @@ try {
     case $path === '/api/comments/create' && $method === 'POST':
       (new CommentsController($pdo))->addComment(); break;
 
-    // ===== Followers (placeholders; implement when ready) =====
+    // ===== Followers (placeholders) =====
     // case $path === '/api/followers/follow' && $method === 'POST':
     //   (new FollowersController($pdo))->follow(); break;
     // case $path === '/api/followers' && $method === 'GET':

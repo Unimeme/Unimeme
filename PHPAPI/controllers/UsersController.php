@@ -4,8 +4,10 @@ declare(strict_types=1);
 final class UsersController
 {
     private PDO $pdo;
-    public function __construct(PDO $pdo){ $this->pdo = $pdo; }
 
+    public function __construct(PDO $pdo){
+        $this->pdo = $pdo;
+    }
     private function readBody(): array {
         $raw  = file_get_contents('php://input') ?: '';
         $data = json_decode($raw, true);
@@ -18,13 +20,18 @@ final class UsersController
             ?? null;
 
         return [
-            'username'    => $data['username']    ?? $data['UserName'] ?? null,
-            'password'    => $data['password']    ?? $data['Password'] ?? null,
-            'bio'         => $data['bio']         ?? $data['Bio']      ?? null,
-            'profile_url' => $profileUrl,
+            'username'     => $data['username']     ?? $data['UserName']    ?? null,
+            'new_username' => $data['new_username'] ?? $data['newUsername'] ?? null,
+            'password'     => $data['password']     ?? $data['Password']    ?? null,
+            'bio'          => $data['bio']          ?? $data['Bio']         ?? null,
+            'profile_url'  => $profileUrl,
         ];
     }
 
+    /** ----------------------------
+     *  POST /api/users/create
+     *  Body: {username, password, bio?, profile_url?}
+     *  ---------------------------- */
     public function createUser(): void
     {
         $in = $this->readBody();
@@ -55,28 +62,125 @@ final class UsersController
         }
     }
 
+    /** ----------------------------
+     *  POST /api/users/login
+     *  Body: {username, password}
+     *  Res:  {ok:true, user:{user_id,username,bio,profile_url,created_at}}
+     *        or {ok:false,error:'invalid_credentials'|'missing:...'}
+     *  ---------------------------- */
+    public function login(): void
+    {
+        $in = $this->readBody();
+        foreach (['username','password'] as $k) {
+            if (empty($in[$k])) {
+                http_response_code(400);
+                echo json_encode(['ok'=>false,'error'=>"missing:$k"]);
+                return;
+            }
+        }
+
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT user_id, username, password_hash, bio, profile_url, created_at
+                   FROM users
+                  WHERE username = ?"
+            );
+            $stmt->execute([$in['username']]);
+            $row = $stmt->fetch();
+
+            if (!$row || !password_verify($in['password'], (string)$row['password_hash'])) {
+                http_response_code(401);
+                echo json_encode(['ok'=>false,'error'=>'invalid_credentials']);
+                return;
+            }
+
+            $user = [
+                'user_id'     => (int)$row['user_id'],
+                'username'    => (string)$row['username'],
+                'bio'         => $row['bio'],
+                'profile_url' => $row['profile_url'],
+                'created_at'  => $row['created_at'],
+            ];
+
+            echo json_encode(['ok'=>true, 'user'=>$user]);
+        } catch (Throwable $e) {
+            error_log('UsersController::login FAIL: '.$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
+        }
+    }
+
+    /** ----------------------------
+     *  POST /api/users/update
+     *  Body: {username, new_username?, bio?}
+     *  ---------------------------- */
     public function updateUser(): void
     {
         $in = $this->readBody();
+
         if (empty($in['username'])) {
             http_response_code(400);
             echo json_encode(['ok'=>false,'error'=>'missing:username']);
             return;
         }
+    }
+
+        if ($in['bio'] === null && $in['new_username'] === null) {
+            http_response_code(400);
+            echo json_encode(['ok'=>false,'error'=>'nothing_to_update']);
+            return;
+        }
+
+        if (!empty($in['new_username']) && $in['new_username'] !== $in['username']) {
+            try {
+                $check = $this->pdo->prepare("SELECT COUNT(*) AS cnt FROM users WHERE username = ?");
+                $check->execute([$in['new_username']]);
+                $row = $check->fetch();
+                if ($row && (int)$row['cnt'] > 0) {
+                    http_response_code(409);
+                    echo json_encode(['ok'=>false,'error'=>'username_taken']);
+                    return;
+                }
+            } catch (Throwable $e) {
+                error_log('UsersController::updateUser username check FAIL: '.$e->getMessage());
+                http_response_code(500);
+                echo json_encode(['ok'=>false,'error'=>'internal']);
+                return;
+            }
+        }
+
+        // 4) 실제 UPDATE (bio + username만)
+        $fields = [];
+        $params = [];
+
+        if ($in['bio'] !== null) {
+            $fields[] = 'bio = ?';
+            $params[] = $in['bio'];
+        }
+
+        if (!empty($in['new_username'])) {
+            $fields[] = 'username = ?';
+            $params[] = $in['new_username'];
+        }
+
+        $params[] = $in['username']; // WHERE username = ?
+
+        if (empty($fields)) {
+            http_response_code(400);
+            echo json_encode(['ok'=>false,'error'=>'nothing_to_update']);
+            return;
+        }
+
+        $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE username = ?';
 
         try {
-            $stmt = $this->pdo->prepare(
-                "UPDATE users
-                   SET bio = COALESCE(?, bio),
-                       profile_url = COALESCE(?, profile_url)
-                 WHERE username = ?"
-            );
-            $stmt->execute([
-                $in['bio'],
-                $in['profile_url'],
-                $in['username'],
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+
+            echo json_encode([
+                'ok'      => true,
+                'updated' => $stmt->rowCount(),
             ]);
-            echo json_encode(['ok'=>true,'updated'=>$stmt->rowCount()]);
         } catch (Throwable $e) {
             error_log('UsersController::updateUser FAIL: '.$e->getMessage());
             http_response_code(500);
@@ -84,6 +188,10 @@ final class UsersController
         }
     }
 
+    /** ----------------------------
+     *  POST /api/users/delete
+     *  Body: {username}
+     *  ---------------------------- */
     public function deleteUser(): void
     {
         $in = $this->readBody();
@@ -103,6 +211,9 @@ final class UsersController
         }
     }
 
+    /** ----------------------------
+     *  GET /api/users/all
+     *  ---------------------------- */
     public function getAllUsers(): void
     {
         try {
@@ -117,6 +228,9 @@ final class UsersController
         }
     }
 
+    /** ----------------------------
+     *  GET /api/users/get?username=...
+     *  ---------------------------- */
     public function getUser(): void
     {
         $username = $_GET['username'] ?? null;
@@ -132,7 +246,11 @@ final class UsersController
             );
             $stmt->execute([$username]);
             $row = $stmt->fetch() ?: null;
-            if (!$row) { http_response_code(404); echo json_encode(['ok'=>false,'error'=>'not_found']); return; }
+            if (!$row) {
+                http_response_code(404);
+                echo json_encode(['ok'=>false,'error'=>'not_found']);
+                return;
+            }
             echo json_encode(['ok'=>true,'user'=>$row]);
         } catch (Throwable $e) {
             error_log('UsersController::getUser FAIL: '.$e->getMessage());

@@ -164,7 +164,7 @@
     <string name="err_password_invalid">Password must be 8+ chars incl. a letter and a digit</string>
     <string name="err_password_mismatch">Passwords do not match</string>
     <string name="err_consent_required">Please accept the required consents</string>
-    <string name="signup_success">Account created (UI only)</string>
+    <string name="signup_success">Account created</string>
 
 
 </resources>
