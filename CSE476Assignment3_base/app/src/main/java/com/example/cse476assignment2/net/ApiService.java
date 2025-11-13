@@ -2,8 +2,10 @@ package com.example.cse476assignment2.net;
 
 import com.example.cse476assignment2.model.Req.LoginReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
+import com.example.cse476assignment2.model.Req.UpdateUserReq;
 import com.example.cse476assignment2.model.Res.LoginRes;
 import com.example.cse476assignment2.model.Res.SignUpRes;
+import com.example.cse476assignment2.model.Res.UpdateUserRes;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -15,4 +17,7 @@ public interface ApiService {
 
     @POST("cse476/group6/api/users/login")
     Call<LoginRes> login(@Body LoginReq body);
+
+    @POST("cse476/group6/api/users/update")
+    Call<UpdateUserRes> updateUser(@Body UpdateUserReq body);
 }
