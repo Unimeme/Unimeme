@@ -1,15 +1,22 @@
 package com.example.cse476assignment2.net;
 
+import com.example.cse476assignment2.model.Req.CreatePostReq;
 import com.example.cse476assignment2.model.Req.LoginReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
 import com.example.cse476assignment2.model.Req.UpdateUserReq;
+import com.example.cse476assignment2.model.Res.CreatePostRes;
 import com.example.cse476assignment2.model.Res.LoginRes;
 import com.example.cse476assignment2.model.Res.SignUpRes;
 import com.example.cse476assignment2.model.Res.UpdateUserRes;
+import com.example.cse476assignment2.model.Res.UploadImageRes;
 
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.Part;
 
 public interface ApiService {
     @POST("cse476/group6/api/users/create")
@@ -20,4 +27,18 @@ public interface ApiService {
 
     @POST("cse476/group6/api/users/update")
     Call<UpdateUserRes> updateUser(@Body UpdateUserReq body);
+
+
+    //upload image file
+    @Multipart
+    @POST("cse476/group6/api/posts/upload")
+    Call<UploadImageRes> uploadPostImage(
+            @Part("username") RequestBody username,
+            @Part("password") RequestBody password,
+            @Part MultipartBody.Part image
+    );
+
+    //create post in DB with imageUrl
+    @POST("cse476/group6/api/posts/create")
+    Call<CreatePostRes> createPost(@Body CreatePostReq body);
 }

@@ -41,12 +41,16 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
 
+        // Auto-login only if we have both USERNAME and PASSWORD
         boolean loggedIn = sharedPreferences.getBoolean("LOGGED_IN", false);
-        if (loggedIn) {
-            String savedUser = sharedPreferences.getString("USERNAME", "User");
+        String savedUser = sharedPreferences.getString("USERNAME", null);
+        String savedPass = sharedPreferences.getString("PASSWORD", null);
+
+        if (loggedIn && savedUser != null && savedPass != null) {
             applyUserDarkModePreference(savedUser);
             goToAccountPage(savedUser);
         }
+
 
         loginButton.setOnClickListener(v -> {
             String user = username.getText().toString().trim();
@@ -66,28 +70,43 @@ public class MainActivity extends AppCompatActivity {
                     if (response.isSuccessful() && response.body() != null) {
                         LoginRes res = response.body();
                         if (res.ok && res.user != null) {
-                            Toast.makeText(MainActivity.this, "Welcome " + res.user.username, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this,
+                                    "Welcome " + res.user.username,
+                                    Toast.LENGTH_SHORT).show();
 
+                            // NEW: Always store USERNAME + PASSWORD for this session
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.putString("USERNAME", res.user.username); // for account / posts
+                            editor.putString("PASSWORD", pass);              // for server auth (upload, feed)
+
+                            // NEW: "Remember me" only controls auto-login flag
                             if (rememberMe.isChecked()) {
-                                sharedPreferences.edit()
-                                        .putBoolean("LOGGED_IN", true)
-                                        .putString("USERNAME", res.user.username)
-                                        .apply();
+                                editor.putBoolean("LOGGED_IN", true);
+                            } else {
+                                editor.putBoolean("LOGGED_IN", false);
                             }
+
+                            editor.apply();
 
                             applyUserDarkModePreference(res.user.username);
                             goToAccountPage(res.user.username);
                         } else {
-                            Toast.makeText(MainActivity.this, "Login failed: " + res.error, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this,
+                                    "Login failed: " + res.error,
+                                    Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Toast.makeText(MainActivity.this, "Server error (" + response.code() + ")", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this,
+                                "Server error (" + response.code() + ")",
+                                Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<LoginRes> call, Throwable t) {
-                    Toast.makeText(MainActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,
+                            "Network error: " + t.getMessage(),
+                            Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -98,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // 상태 저장
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
