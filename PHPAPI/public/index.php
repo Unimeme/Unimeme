@@ -72,6 +72,9 @@ try {
     case $path === '/api/posts/create' && $method === 'POST':
       (new PostsController($pdo))->createPost();  break;
 
+     case $path === '/api/posts/upload' && $method === 'POST':
+        (new PostsController($pdo))->uploadPostImage();  break;
+
     case $path === '/api/posts/delete' && $method === 'DELETE':
       (new PostsController($pdo))->deletePost();  break;
 
