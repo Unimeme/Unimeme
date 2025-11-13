@@ -1,5 +1,6 @@
 package com.example.cse476assignment2;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -104,8 +105,16 @@ public class SignUpActivity extends AppCompatActivity {
                     SignUpRes res = response.body();
                     if (res.ok) {
                         Toast.makeText(SignUpActivity.this,
-                                getString(R.string.signup_success) + " (id=" + res.id + ")",
+                                getString(R.string.signup_success),
                                 Toast.LENGTH_SHORT).show();
+
+                        SharedPreferences userPrefs =
+                                getSharedPreferences("USER_PREFS_" + user, MODE_PRIVATE);
+
+                        userPrefs.edit()
+                                .putString("USER_DISPLAY_NAME", user)
+                                .putString("USER_EMAIL", email)
+                                .apply();
                         finish();
                     } else {
                         Toast.makeText(SignUpActivity.this,

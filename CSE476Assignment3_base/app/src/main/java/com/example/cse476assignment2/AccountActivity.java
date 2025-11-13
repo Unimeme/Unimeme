@@ -11,55 +11,56 @@ import androidx.appcompat.app.AppCompatActivity;
 public class AccountActivity extends AppCompatActivity {
 
     TextView displayNameTextView, emailTextView;
-    Button leaderboardButton, communitypostsButton, logoutButton, accountSettingsButton;
+    Button leaderboardButton, communityPostsButton, logoutButton, accountSettingsButton;
     SharedPreferences sharedPreferences;
+
+    private String currentUsername;  // Username used for login and server
+    private String currentEmail;     // School email (display only)
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_account);
 
-        String email = getIntent().getStringExtra("USERNAME");
-        if (email == null) {
-            email = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE).getString("USERNAME", "User");
+        sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+
+        // Load login username from Intent or LOGIN_PREFS
+        currentUsername = getIntent().getStringExtra("USERNAME");
+        if (currentUsername == null) {
+            currentUsername = sharedPreferences.getString("USERNAME", "User");
         }
 
+        // Bind UI elements
         displayNameTextView = findViewById(R.id.displayNameTextView);
         emailTextView = findViewById(R.id.emailTextView);
         leaderboardButton = findViewById(R.id.button4);
-        communitypostsButton = findViewById(R.id.buttonCommunityPosts);
+        communityPostsButton = findViewById(R.id.buttonCommunityPosts);
         logoutButton = findViewById(R.id.logoutButton);
         accountSettingsButton = findViewById(R.id.buttonAccountSettings);
 
-        sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        // Load user-specific preferences
+        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + currentUsername, MODE_PRIVATE);
+        String displayName = userPrefs.getString("USER_DISPLAY_NAME", currentUsername);
+        currentEmail = userPrefs.getString("USER_EMAIL", currentUsername); // fallback to username if email is missing
 
-        // Load the display name from the user-specific preferences
-        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + email, MODE_PRIVATE);
-        String displayName = userPrefs.getString("USER_DISPLAY_NAME", "User");
-
-        // Set the text for both fields
+        // Display data
         displayNameTextView.setText(displayName);
-        emailTextView.setText(email);
+        emailTextView.setText(currentEmail);
 
-        leaderboardButton.setText(R.string.go_to_leaderboard);
-        communitypostsButton.setText(R.string.go_to_community_posts);
-        logoutButton.setText(R.string.logout);
-        accountSettingsButton.setText(R.string.account_settings_btn);
-
+        // Button listeners
         leaderboardButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccountActivity.this, LeaderboardActivity.class);
             startActivity(intent);
         });
 
-        communitypostsButton.setOnClickListener(v -> {
+        communityPostsButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccountActivity.this, CommunityPostsActivity.class);
             startActivity(intent);
         });
 
-        final String finalEmail = email;
         accountSettingsButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccountActivity.this, PreferencesActivity.class);
-            intent.putExtra("USERNAME", finalEmail);
+            intent.putExtra("USERNAME", currentUsername);
             startActivity(intent);
         });
 
@@ -70,17 +71,23 @@ public class AccountActivity extends AppCompatActivity {
         });
     }
 
-    // UPDATED: This onResume will refresh the display name if the user changes it in settings
+    // Refresh values in case user changed display name or username in PreferencesActivity
     @Override
     protected void onResume() {
         super.onResume();
-        String email = emailTextView.getText().toString();
-        if (email.isEmpty()) {
-            email = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE).getString("USERNAME", "User");
+
+        if (sharedPreferences == null) {
+            sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
         }
-        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + email, MODE_PRIVATE);
-        String displayName = userPrefs.getString("USER_DISPLAY_NAME", "User");
+
+        // Username may have changed
+        currentUsername = sharedPreferences.getString("USERNAME", currentUsername);
+
+        SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + currentUsername, MODE_PRIVATE);
+        String displayName = userPrefs.getString("USER_DISPLAY_NAME", currentUsername);
+        currentEmail = userPrefs.getString("USER_EMAIL", currentUsername);
+
         displayNameTextView.setText(displayName);
-        emailTextView.setText(email);
+        emailTextView.setText(currentEmail);
     }
 }
