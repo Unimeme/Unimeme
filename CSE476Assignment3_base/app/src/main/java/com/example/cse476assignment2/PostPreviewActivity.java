@@ -326,7 +326,7 @@ public class PostPreviewActivity extends AppCompatActivity {
                 }
 
                 Toast.makeText(PostPreviewActivity.this,
-                        "Post uploaded to server (id=" + res.postId + ").",
+                        "Post uploaded!",
                         Toast.LENGTH_SHORT).show();
             }
 

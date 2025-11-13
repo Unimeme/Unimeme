@@ -170,7 +170,7 @@ public class PreferencesActivity extends AppCompatActivity {
                 }
 
                 Toast.makeText(PreferencesActivity.this,
-                        "Preferences saved (synced with server).",
+                        "saved!",
                         Toast.LENGTH_SHORT).show();
             }
 
