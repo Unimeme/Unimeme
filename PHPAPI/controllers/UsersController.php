@@ -123,6 +123,7 @@ final class UsersController
             echo json_encode(['ok'=>false,'error'=>'missing:username']);
             return;
         }
+    }
 
         if ($in['bio'] === null && $in['new_username'] === null) {
             http_response_code(400);
