@@ -1,80 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@drawable/login_background">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/top_background">
 
     <LinearLayout
-        android:orientation="vertical" android:padding="24dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content">
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-        <!-- Email (must end with @msu.edu) -->
-        <EditText
-            android:id="@+id/inputEmail"
+        <!-- Email -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="MSU Email (must end with @msu.edu)"
-            android:inputType="textEmailAddress"
-            android:background="@android:drawable/edit_text"
-            android:padding="12dp"
-            android:layout_marginBottom="12dp"/>
-        <!-- Username (required, uniqueness = backend later) -->
-        <EditText
-            android:id="@+id/inputUsername"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="@string/signup_username_hint"
-            android:inputType="textPersonName"
-            android:background="@android:drawable/edit_text"
-            android:padding="12dp"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="12dp"
+            app:errorEnabled="true"
+            app:helperTextEnabled="true"
+            app:helperText="Must end with @msu.edu"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#6200EE"
+            app:boxStrokeWidthFocused="2dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="MSU Email"
+                android:inputType="textEmailAddress"
+                android:padding="12dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Username -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutUsername"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:errorEnabled="true"
+            app:helperTextEnabled="true"
+            app:helperText="Required. Must be unique (checked later)."
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#6200EE"
+            app:boxStrokeWidthFocused="2dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_username_hint"
+                android:inputType="textPersonName"
+                android:padding="12dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Bio (optional) -->
-        <EditText
-            android:id="@+id/inputBio"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="@string/signup_bio_hint"
-            android:inputType="textCapSentences|textMultiLine"
-            android:minLines="2"
-            android:background="@android:drawable/edit_text"
-            android:padding="12dp"
-            android:layout_marginBottom="12dp"/>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:helperTextEnabled="true"
+            app:helperText="Optional"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#6200EE"
+            app:boxStrokeWidthFocused="2dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_bio_hint"
+                android:inputType="textCapSentences|textMultiLine"
+                android:minLines="2"
+                android:padding="12dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Password -->
-        <EditText
-            android:id="@+id/inputPassword"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="@string/signup_password_hint"
-            android:inputType="textPassword"
-            android:background="@android:drawable/edit_text"
-            android:padding="12dp"
-            android:layout_marginBottom="12dp"/>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:errorEnabled="true"
+            app:helperTextEnabled="true"
+            app:helperText="8+ chars, letters and digits"
+            app:endIconMode="password_toggle"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#6200EE"
+            app:boxStrokeWidthFocused="2dp">
 
-        <!-- Confirm -->
-        <EditText
-            android:id="@+id/inputConfirm"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="@string/signup_confirm_hint"
-            android:inputType="textPassword"
-            android:background="@android:drawable/edit_text"
-            android:padding="12dp"
-            android:layout_marginBottom="12dp"/>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_password_hint"
+                android:inputType="textPassword"
+                android:padding="12dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Confirm password -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:errorEnabled="true"
+            app:helperTextEnabled="true"
+            app:helperText="Must match password"
+            app:endIconMode="password_toggle"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#6200EE"
+            app:boxStrokeWidthFocused="2dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputConfirm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_confirm_hint"
+                android:inputType="textPassword"
+                android:padding="12dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Required consents -->
         <CheckBox
             android:id="@+id/checkTos"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/tos_privacy_consent"
             android:layout_marginTop="8dp"/>
 
         <CheckBox
             android:id="@+id/checkData"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/data_consent"
             android:layout_marginTop="4dp"/>
 
-        <!-- View Terms (image-styled button) -->
+        <!-- View Terms -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/buttonViewTerms"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/view_terms"
             android:layout_marginTop="8dp"
             android:background="@drawable/btn_background_1"
@@ -82,16 +155,19 @@
             android:textColor="@android:color/black"
             android:drawableStart="@android:drawable/ic_menu_info_details"
             android:drawablePadding="12dp"
-            android:paddingStart="20dp" android:paddingEnd="20dp"/>
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"/>
 
-        <!-- Create account CTA (disabled until form valid) -->
+        <!-- Create account CTA -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/buttonCreateAccount"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/signup"
             android:enabled="false"
             android:backgroundTint="#FFFFFF"
             android:textColor="#000000"/>
+
     </LinearLayout>
 </ScrollView>

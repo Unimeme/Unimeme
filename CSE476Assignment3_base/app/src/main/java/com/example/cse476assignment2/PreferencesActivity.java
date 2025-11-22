@@ -24,14 +24,14 @@ public class PreferencesActivity extends AppCompatActivity {
     private static final String KEY_BIO = "USER_BIO";
     private static final String KEY_LOCATION = "LOCATION_TRACKING";
     private static final String KEY_DARK_MODE = "DARK_MODE";
-    private static final String KEY_EMAIL = "USER_EMAIL"; // school email
+    private static final String KEY_EMAIL = "USER_EMAIL";
 
     private EditText displayNameInput, bioInput;
     private SwitchCompat locationSwitch, darkModeSwitch;
     private Button saveButton, backButton;
 
     private SharedPreferences userPrefs;
-    private String username; // login/server username
+    private String username; // current username stored on server
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,12 +57,12 @@ public class PreferencesActivity extends AppCompatActivity {
         backButton = findViewById(R.id.buttonBackPreferences);
 
         // Load existing values
-        displayNameInput.setText(userPrefs.getString(KEY_DISPLAY_NAME, ""));
+        displayNameInput.setText(userPrefs.getString(KEY_DISPLAY_NAME, username));
         bioInput.setText(userPrefs.getString(KEY_BIO, ""));
         locationSwitch.setChecked(userPrefs.getBoolean(KEY_LOCATION, false));
         darkModeSwitch.setChecked(userPrefs.getBoolean(KEY_DARK_MODE, false));
 
-        // Dark mode switch
+        // Dark mode toggle
         darkModeSwitch.setOnCheckedChangeListener((btn, isChecked) -> {
             if (isChecked)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
@@ -80,30 +80,43 @@ public class PreferencesActivity extends AppCompatActivity {
         String newBio = bioInput.getText().toString().trim();
         String storedEmail = userPrefs.getString(KEY_EMAIL, null);
 
-        // Save local preferences first
-        userPrefs.edit()
-                .putString(KEY_DISPLAY_NAME, newDisplayName)
-                .putString(KEY_BIO, newBio)
-                .putBoolean(KEY_LOCATION, locationSwitch.isChecked())
-                .putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked())
-                .apply();
-
         // Determine if username change is requested
         String newUsernameForServer =
                 (!newDisplayName.isEmpty() && !newDisplayName.equals(username))
                         ? newDisplayName
                         : null;
 
+        // Bio: if empty, send null (server treats it as "no change")
         String bioForServer = newBio.isEmpty() ? null : newBio;
+
+        // If nothing is changing on server → local only
+        if (newUsernameForServer == null && bioForServer == null) {
+            saveLocalPrefs(newDisplayName, newBio, storedEmail);
+            Toast.makeText(this, "Preferences successfully updated.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         // Build server request
         UpdateUserReq req = new UpdateUserReq(username, newUsernameForServer, bioForServer);
 
+        saveButton.setEnabled(false);
+
         ApiClient.get().updateUser(req).enqueue(new Callback<UpdateUserRes>() {
             @Override
             public void onResponse(Call<UpdateUserRes> call, Response<UpdateUserRes> response) {
+                saveButton.setEnabled(true);
 
+                // HTTP-level error (409, 500, etc.)
                 if (!response.isSuccessful() || response.body() == null) {
+
+                    if (response.code() == 409) {
+                        displayNameInput.setError("This username is already taken.");
+                        Toast.makeText(PreferencesActivity.this,
+                                "Username already taken.",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     Toast.makeText(PreferencesActivity.this,
                             "Server error: " + response.code(),
                             Toast.LENGTH_SHORT).show();
@@ -112,37 +125,48 @@ public class PreferencesActivity extends AppCompatActivity {
 
                 UpdateUserRes body = response.body();
 
+                // Server business errors
                 if (!body.ok) {
-                    String msg = "Update failed: " + body.error;
-                    Toast.makeText(PreferencesActivity.this, msg, Toast.LENGTH_SHORT).show();
+
+                    if ("username_taken".equals(body.error)) {
+                        displayNameInput.setError("This username is already taken.");
+                        Toast.makeText(PreferencesActivity.this,
+                                "Username already taken.",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Toast.makeText(PreferencesActivity.this,
+                            "Update failed: " + body.error,
+                            Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // Handle username change
+                // SUCCESS: now update local preferences
+                saveLocalPrefs(newDisplayName, newBio, storedEmail);
+
+                // Handle username change locally
                 if (newUsernameForServer != null) {
 
+                    // Update LOGIN_PREFS
                     SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
                     loginPrefs.edit()
                             .putString("USERNAME", newUsernameForServer)
                             .apply();
 
+                    // Create or load the new prefs file
                     SharedPreferences newUserPrefs =
                             getSharedPreferences("USER_PREFS_" + newUsernameForServer, MODE_PRIVATE);
 
-                    SharedPreferences.Editor e = newUserPrefs.edit();
-                    e.putString(KEY_DISPLAY_NAME, newDisplayName);
-                    e.putString(KEY_BIO, newBio);
-                    e.putBoolean(KEY_LOCATION, locationSwitch.isChecked());
-                    e.putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked());
+                    SharedPreferences.Editor editor = newUserPrefs.edit();
+                    editor.putString(KEY_DISPLAY_NAME, newDisplayName);
+                    editor.putString(KEY_BIO, newBio);
+                    editor.putBoolean(KEY_LOCATION, locationSwitch.isChecked());
+                    editor.putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked());
+                    if (storedEmail != null) editor.putString(KEY_EMAIL, storedEmail);
+                    editor.apply();
 
-                    // Keep user's school email tied to new username
-                    if (storedEmail != null) {
-                        e.putString(KEY_EMAIL, storedEmail);
-                    }
-
-                    e.apply();
-
-                    // Update local reference
+                    // Update references
                     username = newUsernameForServer;
                     userPrefs = newUserPrefs;
                 }
@@ -154,10 +178,24 @@ public class PreferencesActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<UpdateUserRes> call, Throwable t) {
+                saveButton.setEnabled(true);
                 Toast.makeText(PreferencesActivity.this,
                         "Network error: " + t.getMessage(),
                         Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /**
+     * Save local preferences only after server success.
+     */
+    private void saveLocalPrefs(String displayName, String bio, String storedEmail) {
+        SharedPreferences.Editor edit = userPrefs.edit();
+        edit.putString(KEY_DISPLAY_NAME, displayName);
+        edit.putString(KEY_BIO, bio);
+        edit.putBoolean(KEY_LOCATION, locationSwitch.isChecked());
+        edit.putBoolean(KEY_DARK_MODE, darkModeSwitch.isChecked());
+        if (storedEmail != null) edit.putString(KEY_EMAIL, storedEmail);
+        edit.apply();
     }
 }
