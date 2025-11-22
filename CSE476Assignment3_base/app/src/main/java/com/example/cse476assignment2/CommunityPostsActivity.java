@@ -46,7 +46,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     private ActivityResultLauncher<Intent> commentsLauncher;
     private ActivityResultLauncher<Intent> postPreviewLauncher;
 
-    // ✅ paging
+    // paging
     private boolean isLoading = false;
     private Integer nextAfterId = 0;
     private final int PAGE_SIZE = 20;
@@ -68,7 +68,6 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         postsRecyclerView = findViewById(R.id.recyclerPosts);
         Spinner sortSpinner = findViewById(R.id.sortSpinner);
 
-        // ✅ 일단 로컬 캐시(오프라인용) 로드
         List<Post> loadedPosts = DataManager.loadPosts(this);
         if (loadedPosts == null || loadedPosts.isEmpty()) {
             ensureDefaultPosts();
@@ -88,10 +87,8 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         backButton.setOnClickListener(v -> finish());
         addPostButton.setOnClickListener(v -> showImageSourceChooser());
 
-        // ✅ 서버에서 최신 피드 불러오기 (로컬/기본은 실패 시만 사용)
         loadFeed(true);
 
-        // ✅ 무한 스크롤
         postsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
@@ -110,13 +107,16 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     @Override
     protected void onStop() {
         super.onStop();
-        // ✅ 서버에서 받은 것도 캐싱해두기
         DataManager.savePosts(this, userPosts);
     }
 
-    // ✅ 서버 getPostFeed
+    private final java.util.HashSet<Integer> seenPostIds = new java.util.HashSet<>();
+
     private void loadFeed(boolean firstPage) {
         if (isLoading) return;
+
+        if (!firstPage && nextAfterId == 0) return;
+
         isLoading = true;
 
         SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
@@ -129,50 +129,57 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
             return;
         }
 
-        Integer after = firstPage ? 0 : nextAfterId;
+        int after = firstPage ? 0 : nextAfterId;
 
         ApiClient.get().getPostFeed(username, password, PAGE_SIZE, after)
-                .enqueue(new Callback<GetPostFeedRes>() {
+                .enqueue(new retrofit2.Callback<GetPostFeedRes>() {
                     @Override
-                    public void onResponse(Call<GetPostFeedRes> call,
-                                           Response<GetPostFeedRes> response) {
+                    public void onResponse(retrofit2.Call<GetPostFeedRes> call,
+                                           retrofit2.Response<GetPostFeedRes> response) {
                         isLoading = false;
 
                         if (!response.isSuccessful() || response.body() == null) {
                             Toast.makeText(CommunityPostsActivity.this,
                                     "Feed load failed: " + response.code(),
                                     Toast.LENGTH_SHORT).show();
-                            return; // ✅ 실패하면 기존 로컬/기본 데이터 유지
+                            return;
                         }
 
                         GetPostFeedRes res = response.body();
-                        if (res.posts == null) return;
+                        if (res.posts == null) res.posts = new ArrayList<>();
 
-                        if (firstPage) userPosts.clear();
+                        if (firstPage) {
+                            userPosts.clear();
+                            seenPostIds.clear();
+                        }
 
                         for (PostDto dto : res.posts) {
+                            int pid = dto.postId;
+                            if (pid <= 0) continue;
+
+                            if (seenPostIds.contains(pid)) continue;
+                            seenPostIds.add(pid);
+
                             userPosts.add(PostMapper.fromDto(dto, username));
                         }
 
-                        // nextAfterId pagination
-                        nextAfterId = res.nextAfterId != null ? res.nextAfterId : 0;
+                        nextAfterId = res.nextAfterId; // int
+
+                        if (res.posts.isEmpty()) nextAfterId = 0;
 
                         sortPostsAndRefresh();
-                        DataManager.savePosts(CommunityPostsActivity.this, userPosts);
                     }
 
                     @Override
-                    public void onFailure(Call<GetPostFeedRes> call, Throwable t) {
+                    public void onFailure(retrofit2.Call<GetPostFeedRes> call, Throwable t) {
                         isLoading = false;
                         Toast.makeText(CommunityPostsActivity.this,
                                 "Feed error: " + t.getMessage(),
                                 Toast.LENGTH_SHORT).show();
-                        // ✅ 실패하면 로컬/기본 데이터 그대로 보여줌
                     }
                 });
     }
 
-    // ---------------- 기존 코드 그대로 ----------------
 
     private void registerActivityResultLaunchers() {
         cameraXLauncher = registerForActivityResult(

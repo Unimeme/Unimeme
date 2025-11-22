@@ -33,7 +33,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private final List<Post> posts;
     private final OnPostInteractionListener interactionListener;
 
-    // ✅ 서버 base URL (image_url이 "/cse476/...jpg" 처럼 올 때 붙여줌)
     private static final String BASE_URL = "https://www.egr.msu.edu";
 
     public PostAdapter(List<Post> posts, OnPostInteractionListener listener) {
