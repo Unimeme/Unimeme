@@ -52,7 +52,7 @@ public class PostMapper {
 
                 String cText = c.content != null ? c.content : "";
 
-                long cTimeMs = parseUtc(c.createdAt); // ✅ 서버 시간
+                long cTimeMs = parseUtc(c.createdAt);
 
                 Comment newComment = new Comment(
                         cAuthor,
