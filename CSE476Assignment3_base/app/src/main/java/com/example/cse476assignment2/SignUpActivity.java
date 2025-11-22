@@ -101,12 +101,22 @@ public class SignUpActivity extends AppCompatActivity {
             public void onResponse(Call<SignUpRes> call, Response<SignUpRes> response) {
                 buttonCreate.setEnabled(true);
 
-                if (!response.isSuccessful() || response.body() == null) {
+                // --- handle HTTP error before res.ok check ---
+                if (!response.isSuccessful()) {
+                    if (response.code() == 409) {
+                        layoutUsername.setError("This username is already taken.");
+                        Toast.makeText(SignUpActivity.this,
+                                "Username already taken.",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     Toast.makeText(SignUpActivity.this,
                             "Signup failed (" + response.code() + ")",
                             Toast.LENGTH_SHORT).show();
                     return;
                 }
+
 
                 SignUpRes res = response.body();
 
