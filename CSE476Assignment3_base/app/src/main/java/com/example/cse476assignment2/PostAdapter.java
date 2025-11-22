@@ -1,5 +1,6 @@
 package com.example.cse476assignment2;
 
+import android.net.Uri;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -12,8 +13,12 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
@@ -22,11 +27,13 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         void onCommentClick(Post post, int position);
         void onLikeClick(int position);
         void onHashtagClick(String hashtag);
-        void onDeleteClick(int position); // NEW
+        void onDeleteClick(int position);
     }
 
     private final List<Post> posts;
     private final OnPostInteractionListener interactionListener;
+
+    private static final String BASE_URL = "https://www.egr.msu.edu";
 
     public PostAdapter(List<Post> posts, OnPostInteractionListener listener) {
         this.posts = posts;
@@ -51,10 +58,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         return posts.size();
     }
 
-    static class PostViewHolder extends RecyclerView.ViewHolder {
+    class PostViewHolder extends RecyclerView.ViewHolder {
         final TextView authorView, locationView, captionView, likesView, hashtagsView;
         final ImageView imageView;
-        final ImageButton btnComment, btnLikePost, btnDeletePost; // UPDATED
+        final ImageButton btnComment, btnLikePost, btnDeletePost;
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -66,27 +73,37 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             hashtagsView = itemView.findViewById(R.id.postHashtags);
             btnComment = itemView.findViewById(R.id.btnComment);
             btnLikePost = itemView.findViewById(R.id.btnLikePost);
-            btnDeletePost = itemView.findViewById(R.id.btnDeletePost); // NEW
+            btnDeletePost = itemView.findViewById(R.id.btnDeletePost);
         }
 
         public void bind(Post post, int position, OnPostInteractionListener listener) {
             authorView.setText(post.getAuthor());
+
             locationView.setText(post.getLocation());
             locationView.setVisibility(TextUtils.isEmpty(post.getLocation()) ? View.GONE : View.VISIBLE);
+
             captionView.setText(post.getCaption());
             captionView.setVisibility(TextUtils.isEmpty(post.getCaption()) ? View.GONE : View.VISIBLE);
 
             if (post.getImageResId() != null) {
                 imageView.setImageResource(post.getImageResId());
             } else {
-                imageView.setImageURI(post.getImageUri());
+                Uri uri = post.getImageUri();
+                String url = (uri != null) ? uri.toString() : "";
+
+                if (url.startsWith("/")) {
+                    url = BASE_URL + url;
+                }
+
+                Glide.with(itemView.getContext())
+                        .load(url)
+                        .into(imageView);
             }
 
             updateLikes(post);
 
-            // --- NEW: Delete Button Logic ---
+            // Delete button
             if (listener != null) {
-                // Compare author to the string resource for "You" to check if it's the user's post
                 if (post.getAuthor().equals(itemView.getContext().getString(R.string.you_as_user))) {
                     btnDeletePost.setVisibility(View.VISIBLE);
                     btnDeletePost.setOnClickListener(v -> listener.onDeleteClick(position));
@@ -108,13 +125,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 if (listener != null) listener.onCommentClick(post, position);
             });
 
+            // hashtags
             if (post.getHashtags() != null && !post.getHashtags().isEmpty()) {
                 StringBuilder hashtagBuilder = new StringBuilder();
                 for (String tag : post.getHashtags()) {
                     hashtagBuilder.append("#").append(tag).append(" ");
                 }
 
-                SpannableString spannableString = new SpannableString(hashtagBuilder.toString().trim());
+                SpannableString spannableString =
+                        new SpannableString(hashtagBuilder.toString().trim());
+
                 int startIndex = 0;
                 for (String tag : post.getHashtags()) {
                     final String currentTag = "#" + tag;
@@ -123,6 +143,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         public void onClick(@NonNull View widget) {
                             if (listener != null) listener.onHashtagClick(currentTag);
                         }
+
                         @Override
                         public void updateDrawState(@NonNull TextPaint ds) {
                             super.updateDrawState(ds);
@@ -130,7 +151,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         }
                     };
                     int endIndex = startIndex + currentTag.length();
-                    spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spannableString.setSpan(
+                            clickableSpan,
+                            startIndex,
+                            endIndex,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    );
                     startIndex = endIndex + 1;
                 }
 
@@ -143,7 +169,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         }
 
         private void updateLikes(Post post) {
-            likesView.setText(itemView.getContext().getString(R.string.likes_format, post.getLikeCount()));
+            likesView.setText(itemView.getContext()
+                    .getString(R.string.likes_format, post.getLikeCount()));
+
             if (post.isLikedByCurrentUser()) {
                 btnLikePost.setImageResource(android.R.drawable.btn_star_big_on);
             } else {

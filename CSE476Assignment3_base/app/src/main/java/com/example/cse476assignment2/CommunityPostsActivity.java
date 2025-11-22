@@ -16,9 +16,15 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.cse476assignment2.model.Res.GetPostFeedRes;
+import com.example.cse476assignment2.model.PostDto;
+import com.example.cse476assignment2.net.ApiClient;
+import com.example.cse476assignment2.net.PostMapper;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,14 +32,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class CommunityPostsActivity extends AppCompatActivity implements PostAdapter.OnPostInteractionListener {
 
     private final List<Post> userPosts = new ArrayList<>();
     private PostAdapter postAdapter;
     private SortOption currentSortOption = SortOption.MOST_RECENT;
+
     private ActivityResultLauncher<Intent> cameraXLauncher;
     private ActivityResultLauncher<Intent> commentsLauncher;
     private ActivityResultLauncher<Intent> postPreviewLauncher;
+
+    // paging
+    private boolean isLoading = false;
+    private Integer nextAfterId = 0;
+    private final int PAGE_SIZE = 20;
+
+    private RecyclerView postsRecyclerView;
 
     private enum SortOption {
         MOST_RECENT,
@@ -47,7 +65,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
         ImageButton backButton = findViewById(R.id.backButton);
         Button addPostButton = findViewById(R.id.btnAddPost);
-        RecyclerView postsRecyclerView = findViewById(R.id.recyclerPosts);
+        postsRecyclerView = findViewById(R.id.recyclerPosts);
         Spinner sortSpinner = findViewById(R.id.sortSpinner);
 
         List<Post> loadedPosts = DataManager.loadPosts(this);
@@ -68,6 +86,22 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
         backButton.setOnClickListener(v -> finish());
         addPostButton.setOnClickListener(v -> showImageSourceChooser());
+
+        loadFeed(true);
+
+        postsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                super.onScrolled(rv, dx, dy);
+                LinearLayoutManager lm = (LinearLayoutManager) rv.getLayoutManager();
+                if (lm == null) return;
+
+                int lastVisible = lm.findLastVisibleItemPosition();
+                if (lastVisible >= userPosts.size() - 5) {
+                    loadFeed(false);
+                }
+            }
+        });
     }
 
     @Override
@@ -75,6 +109,77 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         super.onStop();
         DataManager.savePosts(this, userPosts);
     }
+
+    private final java.util.HashSet<Integer> seenPostIds = new java.util.HashSet<>();
+
+    private void loadFeed(boolean firstPage) {
+        if (isLoading) return;
+
+        if (!firstPage && nextAfterId == 0) return;
+
+        isLoading = true;
+
+        SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = loginPrefs.getString("USERNAME", null);
+        String password = loginPrefs.getString("PASSWORD", null);
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in.", Toast.LENGTH_SHORT).show();
+            isLoading = false;
+            return;
+        }
+
+        int after = firstPage ? 0 : nextAfterId;
+
+        ApiClient.get().getPostFeed(username, password, PAGE_SIZE, after)
+                .enqueue(new retrofit2.Callback<GetPostFeedRes>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<GetPostFeedRes> call,
+                                           retrofit2.Response<GetPostFeedRes> response) {
+                        isLoading = false;
+
+                        if (!response.isSuccessful() || response.body() == null) {
+                            Toast.makeText(CommunityPostsActivity.this,
+                                    "Feed load failed: " + response.code(),
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        GetPostFeedRes res = response.body();
+                        if (res.posts == null) res.posts = new ArrayList<>();
+
+                        if (firstPage) {
+                            userPosts.clear();
+                            seenPostIds.clear();
+                        }
+
+                        for (PostDto dto : res.posts) {
+                            int pid = dto.postId;
+                            if (pid <= 0) continue;
+
+                            if (seenPostIds.contains(pid)) continue;
+                            seenPostIds.add(pid);
+
+                            userPosts.add(PostMapper.fromDto(dto, username));
+                        }
+
+                        nextAfterId = res.nextAfterId; // int
+
+                        if (res.posts.isEmpty()) nextAfterId = 0;
+
+                        sortPostsAndRefresh();
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<GetPostFeedRes> call, Throwable t) {
+                        isLoading = false;
+                        Toast.makeText(CommunityPostsActivity.this,
+                                "Feed error: " + t.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
 
     private void registerActivityResultLaunchers() {
         cameraXLauncher = registerForActivityResult(
@@ -133,9 +238,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
     }
 
     @Override
-    public void onLikeClick(int position) {
-        // This is handled in the adapter, but the method must be implemented.
-    }
+    public void onLikeClick(int position) {}
 
     @Override
     public void onHashtagClick(String hashtag) {
@@ -145,29 +248,27 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         startActivity(intent);
     }
 
-    // NEW: Implementation for the delete button listener
     @Override
     public void onDeleteClick(int position) {
         new AlertDialog.Builder(this)
                 .setTitle("Delete Post")
                 .setMessage("Are you sure you want to delete this post? This cannot be undone.")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    // Remove the post from the list
                     userPosts.remove(position);
-                    // Notify the adapter that an item was removed
                     postAdapter.notifyItemRemoved(position);
-                    // Save the updated list to persist the deletion
                     DataManager.savePosts(CommunityPostsActivity.this, userPosts);
-                    // Show confirmation message
                     Toast.makeText(this, "Post deleted successfully.", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("No", null) // Do nothing if "No" is pressed
+                .setNegativeButton("No", null)
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
 
     private void setupSortSpinner(Spinner sortSpinner) {
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.post_sort_options, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> adapter =
+                ArrayAdapter.createFromResource(this,
+                        R.array.post_sort_options,
+                        android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sortSpinner.setAdapter(adapter);
         sortSpinner.setSelection(currentSortOption.ordinal());
@@ -184,9 +285,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
     private void addPostToFeed(Uri imageUri, String caption, String location, List<String> hashtags) {
         Post newPost = new Post(imageUri, caption, getString(R.string.you_as_user), location);
-        if (hashtags != null) {
-            newPost.setHashtags(hashtags);
-        }
+        if (hashtags != null) newPost.setHashtags(hashtags);
         userPosts.add(0, newPost);
         sortPostsAndRefresh();
     }
@@ -204,21 +303,23 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
         if (!userPosts.isEmpty()) return;
         long now = System.currentTimeMillis();
 
-        Post squirrelPost = new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty", "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18));
+        Post squirrelPost = new Post(R.drawable.squirrel_post, "Look at this little guy!", "Sparty",
+                "W. J. Beal Botanical Garden", 42, now - TimeUnit.HOURS.toMillis(18));
         ArrayList<String> squirrelTags = new ArrayList<>();
         squirrelTags.add("campuslife"); squirrelTags.add("squirrels"); squirrelTags.add("cute");
         squirrelPost.setHashtags(squirrelTags);
         userPosts.add(squirrelPost);
 
-        Post studyPost = new Post(R.drawable.online_class, "Late night study session.", "Zeke", "Online", 120, now - TimeUnit.HOURS.toMillis(6));
+        Post studyPost = new Post(R.drawable.online_class, "Late night study session.", "Zeke",
+                "Online", 120, now - TimeUnit.HOURS.toMillis(6));
         ArrayList<String> studyTags = new ArrayList<>();
         studyTags.add("studygrind"); studyTags.add("finals"); studyTags.add("latenight");
         studyPost.setHashtags(studyTags);
         userPosts.add(studyPost);
 
-        Post towerPost = new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen", "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1));
+        Post towerPost = new Post(R.drawable.beaumont_tower, "Campus is beautiful today.", "Jen",
+                "Beaumont Tower", 75, now - TimeUnit.DAYS.toMillis(1));
         ArrayList<String> towerTags = new ArrayList<>();
-        towerTags.add("gogreen"); towerTags.add("msu"); towerTags.add("spartans");
         towerPost.setHashtags(towerTags);
         userPosts.add(towerPost);
     }

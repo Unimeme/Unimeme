@@ -5,6 +5,7 @@ import com.example.cse476assignment2.model.Req.LoginReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
 import com.example.cse476assignment2.model.Req.UpdateUserReq;
 import com.example.cse476assignment2.model.Res.CreatePostRes;
+import com.example.cse476assignment2.model.Res.GetPostFeedRes;
 import com.example.cse476assignment2.model.Res.LoginRes;
 import com.example.cse476assignment2.model.Res.SignUpRes;
 import com.example.cse476assignment2.model.Res.UpdateUserRes;
@@ -14,9 +15,11 @@ import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Query;
 
 public interface ApiService {
     @POST("cse476/group6/api/users/create")
@@ -41,4 +44,14 @@ public interface ApiService {
     //create post in DB with imageUrl
     @POST("cse476/group6/api/posts/create")
     Call<CreatePostRes> createPost(@Body CreatePostReq body);
+
+
+    // get post
+    @GET("cse476/group6/api/posts/feed")
+    Call<GetPostFeedRes> getPostFeed(
+            @Query("username") String username,
+            @Query("password") String password,
+            @Query("limit") Integer limit,
+            @Query("afterId") Integer afterId
+    );
 }

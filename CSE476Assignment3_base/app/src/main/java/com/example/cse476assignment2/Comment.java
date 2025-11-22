@@ -10,7 +10,6 @@ public class Comment implements Serializable {
     private final long timestamp;
     private final int authorProfileImageResId;
 
-    // NEW: Fields for likes
     private int likeCount = 0;
     private boolean isLikedByCurrentUser = false;
 
@@ -21,25 +20,24 @@ public class Comment implements Serializable {
         this.authorProfileImageResId = authorProfileImageResId;
     }
 
+    public Comment(String author, String text, int authorProfileImageResId, long timestamp) {
+        this.author = author;
+        this.text = text;
+        this.timestamp = timestamp;
+        this.authorProfileImageResId = authorProfileImageResId;
+    }
+
     public String getAuthor() { return author; }
     public String getText() { return text; }
     public long getTimestamp() { return timestamp; }
     public int getAuthorProfileImageResId() { return authorProfileImageResId; }
 
-    // NEW: Methods for likes
     public int getLikeCount() { return likeCount; }
     public boolean isLikedByCurrentUser() { return isLikedByCurrentUser; }
 
-    /**
-     * Toggles the like state. If not liked, it becomes liked and count increases.
-     * If already liked, it becomes un-liked and count decreases.
-     */
     public void toggleLike() {
-        if (isLikedByCurrentUser) {
-            likeCount--;
-        } else {
-            likeCount++;
-        }
+        if (isLikedByCurrentUser) likeCount--;
+        else likeCount++;
         isLikedByCurrentUser = !isLikedByCurrentUser;
     }
 }
