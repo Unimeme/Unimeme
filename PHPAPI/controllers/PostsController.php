@@ -1,8 +1,5 @@
 <?php
-//declare(strict_types=1);
-
-// use App\Security;
-// use PDO;
+// PostsController.php
 
 final class PostsController {
     private \PDO $pdo;
@@ -11,12 +8,17 @@ final class PostsController {
         $this->pdo = $pdo;
     }
 
+    // ----------------------------
+    // Auth helper
+    // ----------------------------
     private function authUser(string $username, string $password): ?array {
         $s = $this->pdo->prepare(
-            "SELECT user_id, username, password_hash FROM users WHERE username = :u"
+            "SELECT user_id, username, password_hash
+               FROM users
+              WHERE username = :u"
         );
         $s->execute([':u' => $username]);
-        $r = $s->fetch();
+        $r = $s->fetch(PDO::FETCH_ASSOC);
 
         return ($r && \App\Security::verifyPassword($password, (string)$r['password_hash']))
             ? $r
@@ -39,7 +41,7 @@ final class PostsController {
         $p   = (string)($b['password'] ?? '');
         $img = trim((string)($b['imageUrl'] ?? ''));
         $cap = (string)($b['caption']  ?? '');
-        $loc = $b['locationId'] ?? null;  // null 허용
+        $loc = $b['locationId'] ?? null;
 
         if ($u === '' || $p === '' || $img === '') {
             http_response_code(400);
@@ -70,7 +72,6 @@ final class PostsController {
             $stmt->bindValue(':uid', (int)$user['user_id'], \PDO::PARAM_INT);
 
             if ($loc === null || $loc === '') {
-                // location_id 컬럼이 NULL 허용이어야 함
                 $stmt->bindValue(':loc', null, \PDO::PARAM_NULL);
             } else {
                 $stmt->bindValue(':loc', (int)$loc, \PDO::PARAM_INT);
@@ -103,6 +104,7 @@ final class PostsController {
      *  5-1) uploadPostImage (multipart/form-data)
      *  POST /api/posts/upload
      *  Fields: username, password, image(file)
+     *  Res: { IsSuccess:bool, imageUrl?:string, error?:string }
      *  ---------------------------- */
     public function uploadPostImage(): void {
         $username = trim((string)($_POST['username'] ?? ''));
@@ -161,7 +163,11 @@ final class PostsController {
         ]);
     }
 
-    // 6) DeletePost (DELETE)
+    /** ----------------------------
+     *  6) DeletePost (DELETE)
+     *  Body: { username, password, postId }
+     *  Res: { IsSuccess:bool, error?:string }
+     *  ---------------------------- */
     public function deletePost(): void {
         $raw = file_get_contents('php://input');
         $b   = json_decode($raw,true);
@@ -179,11 +185,14 @@ final class PostsController {
 
         $user=$this->authUser($u,$p);
         if(!$user){
+            http_response_code(401);
             echo json_encode(['IsSuccess'=>false,'error'=>'auth_failed']);
             return;
         }
 
-        $own=$this->pdo->prepare("SELECT 1 FROM posts WHERE post_id=:pid AND user_id=:uid");
+        $own=$this->pdo->prepare(
+            "SELECT 1 FROM posts WHERE post_id=:pid AND user_id=:uid"
+        );
         $own->execute([':pid'=>$pid, ':uid'=>(int)$user['user_id']]);
         if(!$own->fetchColumn()){
             echo json_encode(['IsSuccess'=>false,'error'=>'not_owner']);
@@ -194,10 +203,13 @@ final class PostsController {
         try {
             $this->pdo->prepare("DELETE FROM comments WHERE post_id=:pid")
                       ->execute([':pid'=>$pid]);
+
             $ok=$this->pdo->prepare("DELETE FROM posts WHERE post_id=:pid")
                           ->execute([':pid'=>$pid]);
+
             $this->pdo->commit();
             echo json_encode(['IsSuccess'=>$ok]);
+
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             error_log('PostsController::deletePost FAIL: '.$e->getMessage());
@@ -206,101 +218,107 @@ final class PostsController {
         }
     }
 
-    // 7) GetPostFeed (GET)
+    /** ----------------------------
+     *  7) GetPostFeed (GET)
+     *  Query: username,password,limit?,afterId?
+     *  Res:
+     *   {
+     *     posts:[{
+     *       post_id, created_at, image_url, caption,
+     *       author:{user_id,username,pic:null},
+     *       location:null,
+     *       comments:[{comment_id,post_id,user_id,username,content,created_at}]
+     *     }],
+     *     nextAfterId:int
+     *   }
+     *  ---------------------------- */
     public function getPostFeed(): void {
-        $u=trim((string)($_GET['username']??''));
-        $p=(string)($_GET['password']??'');
-        $limit=max(1,min(50,(int)($_GET['limit']??20)));
-        $afterId=(int)($_GET['afterId']??0);
+        $u = trim((string)($_GET['username'] ?? ''));
+        $p = (string)($_GET['password'] ?? '');
+        $limit = max(1, min(50, (int)($_GET['limit'] ?? 20)));
+        $afterId = (int)($_GET['afterId'] ?? 0);
 
-        $user=$this->authUser($u,$p);
-        if(!$user){
-            echo json_encode(['error'=>'auth_failed']);
-            return;
+        try {
+            $user = $this->authUser($u, $p);
+            if (!$user) {
+                echo json_encode(['error' => 'auth_failed']);
+                return;
+            }
+
+            $sql = "SELECT p.post_id, p.user_id, p.location_id,
+                           p.image_url, p.caption, p.created_at,
+                           u.username
+                      FROM posts p
+                      JOIN users u ON u.user_id = p.user_id
+                     WHERE ($afterId = 0 OR p.post_id < $afterId)
+                     ORDER BY p.post_id DESC
+                     LIMIT $limit";
+
+            $stmt  = $this->pdo->query($sql);
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!$posts) {
+                echo json_encode(['posts' => [], 'nextAfterId' => 0]);
+                return;
+            }
+
+            $pids = array_map(fn($r)=>(int)$r['post_id'], $posts);
+            $ph   = implode(',', array_fill(0, count($pids), '?'));
+
+            $c = $this->pdo->prepare(
+                "SELECT c.comment_id,
+                        c.post_id,
+                        c.commenter_user_id AS user_id,
+                        u.username,
+                        c.content,
+                        c.created_at
+                   FROM comments c
+                   JOIN users u ON u.user_id = c.commenter_user_id
+                  WHERE c.post_id IN ($ph)
+                  ORDER BY c.created_at ASC"
+            );
+            $c->execute($pids);
+            $cmts = $c->fetchAll(PDO::FETCH_ASSOC);
+
+            $by = [];
+            foreach ($cmts as $x) {
+                $by[(int)$x['post_id']][] = [
+                    'comment_id' => (int)$x['comment_id'],
+                    'post_id'    => (int)$x['post_id'],
+                    'user_id'    => (int)$x['user_id'],
+                    'username'   => $x['username'],
+                    'content'    => $x['content'],
+                    'created_at' => $x['created_at']
+                ];
+            }
+
+            $out = [];
+            foreach ($posts as $p0) {
+                $pid = (int)$p0['post_id'];
+                $out[] = [
+                    'post_id'    => $pid,
+                    'created_at' => $p0['created_at'],
+                    'image_url'  => $p0['image_url'],
+                    'caption'    => $p0['caption'],
+                    'author'     => [
+                        'user_id'  => (int)$p0['user_id'],
+                        'username' => $p0['username'],
+                        'pic'      => null
+                    ],
+                    'location'   => null,
+                    'comments'   => $by[$pid] ?? []
+                ];
+            }
+
+            echo json_encode([
+                'posts'       => $out,
+                'nextAfterId' => min($pids)
+            ]);
+
+        } catch (\Throwable $e) {
+            error_log("PostsController::getPostFeed FAIL: ".$e->getMessage());
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'internal']);
         }
-
-        $authors=$this->pdo->prepare(
-            "SELECT followed_id AS author_id FROM followers WHERE follower_id=:uid
-             UNION
-             SELECT :uid"
-        );
-        $authors->execute([':uid'=>(int)$user['user_id']]);
-        $ids=array_map(fn($r)=>(int)$r['author_id'],$authors->fetchAll());
-        if(!$ids){
-            echo json_encode(['posts'=>[]]);
-            return;
-        }
-
-        $ph=implode(',', array_fill(0,count($ids),'?'));
-        $sql="SELECT p.post_id,p.user_id,p.location_id,p.image_url,p.caption,p.created_at,
-                     u.username,u.profile_url,
-                     l.name AS location_name,l.latitude,l.longitude
-              FROM posts p
-              JOIN users u ON u.user_id=p.user_id
-              LEFT JOIN locations l ON l.location_id=p.location_id
-              WHERE p.user_id IN ($ph) ".($afterId>0?"AND p.post_id < ? ":"")."
-              ORDER BY p.post_id DESC LIMIT ?";
-        $params=$ids;
-        if($afterId>0) $params[]=$afterId;
-        $params[]=$limit;
-
-        $stmt=$this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $posts=$stmt->fetchAll();
-        if(!$posts){
-            echo json_encode(['posts'=>[]]);
-            return;
-        }
-
-        $pids=array_map(fn($r)=>(int)$r['post_id'],$posts);
-        $ph2=implode(',', array_fill(0,count($pids),'?'));
-        $c=$this->pdo->prepare(
-            "SELECT c.comment_id,c.post_id,c.user_id,c.content,c.created_at,u.username
-               FROM comments c
-               JOIN users u ON u.user_id=c.user_id
-              WHERE c.post_id IN ($ph2)
-              ORDER BY c.created_at ASC"
-        );
-        $c->execute($pids);
-        $cmts=$c->fetchAll();
-        $by=[];
-        foreach($cmts as $x){
-            $by[(int)$x['post_id']][]=[
-                'comment_id'=>(int)$x['comment_id'],
-                'post_id'   =>(int)$x['post_id'],
-                'user_id'   =>(int)$x['user_id'],
-                'username'  =>$x['username'],
-                'content'   =>$x['content'],
-                'created_at'=>$x['created_at']
-            ];
-        }
-
-        $out=[];
-        foreach($posts as $p0){
-            $pid=(int)$p0['post_id'];
-            $out[]=[
-                'post_id'   =>$pid,
-                'created_at'=>$p0['created_at'],
-                'image_url' =>$p0['image_url'],
-                'caption'   =>$p0['caption'],
-                'author'    =>[
-                    'user_id' =>(int)$p0['user_id'],
-                    'username'=>$p0['username'],
-                    'pic'     =>$p0['profile_url'],
-                ],
-                'location'  =>$p0['location_id'] ? [
-                    'location_id'=>(int)$p0['location_id'],
-                    'name'       =>$p0['location_name'],
-                    'latitude'   =>$p0['latitude'],
-                    'longitude'  =>$p0['longitude'],
-                ] : null,
-                'comments'  =>$by[$pid] ?? []
-            ];
-        }
-
-        echo json_encode([
-            'posts'      =>$out,
-            'nextAfterId'=>min($pids)
-        ]);
     }
 }
