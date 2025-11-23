@@ -122,6 +122,7 @@
                     android:textStyle="bold" />
 
                 <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonMessages"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     style="@android:style/Widget.Button"
@@ -139,7 +140,7 @@
                     android:textAlignment="viewStart"
                     android:textColor="@android:color/black"
                     android:textStyle="bold"
-                    android:backgroundTint="#D3D3D3" />
+                    android:backgroundTint="#D3D3D3"/>
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/buttonCommunityPosts"
@@ -163,6 +164,7 @@
                     android:textStyle="bold" />
 
                 <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/buttonAchievements"
                     style="@android:style/Widget.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

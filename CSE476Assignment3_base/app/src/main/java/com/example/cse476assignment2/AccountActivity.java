@@ -5,13 +5,14 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 public class AccountActivity extends AppCompatActivity {
 
     TextView displayNameTextView, emailTextView;
-    Button leaderboardButton, communityPostsButton, logoutButton, accountSettingsButton;
+    Button leaderboardButton, communityPostsButton, logoutButton, accountSettingsButton, messageButton, achievementButton;
     SharedPreferences sharedPreferences;
 
     private String currentUsername;  // Username used for login and server
@@ -37,6 +38,8 @@ public class AccountActivity extends AppCompatActivity {
         communityPostsButton = findViewById(R.id.buttonCommunityPosts);
         logoutButton = findViewById(R.id.logoutButton);
         accountSettingsButton = findViewById(R.id.buttonAccountSettings);
+        messageButton = findViewById(R.id.buttonMessages);
+        achievementButton = findViewById(R.id.buttonAchievements);
 
         // Load user-specific preferences
         SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + currentUsername, MODE_PRIVATE);
@@ -68,6 +71,14 @@ public class AccountActivity extends AppCompatActivity {
             sharedPreferences.edit().clear().apply();
             startActivity(new Intent(AccountActivity.this, MainActivity.class));
             finish();
+        });
+
+        messageButton.setOnClickListener(v -> {
+            Toast.makeText(AccountActivity.this, "Coming soon!", Toast.LENGTH_SHORT).show();
+        });
+
+        achievementButton.setOnClickListener(v -> {
+            Toast.makeText(AccountActivity.this, "Coming soon!", Toast.LENGTH_SHORT).show();
         });
     }
 
