@@ -2,6 +2,7 @@
 package com.example.cse476assignment2;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -11,7 +12,17 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.cse476assignment2.model.CommentDto;
+import com.example.cse476assignment2.model.Req.AddCommentReq;
+import com.example.cse476assignment2.model.Res.AddCommentRes;
+import com.example.cse476assignment2.model.Res.GetCommentsRes;
+import com.example.cse476assignment2.net.ApiClient;
 import com.google.android.material.appbar.MaterialToolbar;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 // UPDATED: Implement the new, more general listener
 public class CommentsActivity extends AppCompatActivity implements CommentAdapter.OnCommentInteractionListener {
@@ -50,6 +61,7 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
         commentsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentsRecyclerView.setAdapter(adapter);
 
+        loadCommentsFromServer();
         btnPostComment.setOnClickListener(v -> postNewComment());
 
         updateCommentsVisibility();
@@ -61,15 +73,54 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
             Toast.makeText(this, "Cannot post an empty comment", Toast.LENGTH_SHORT).show();
             return;
         }
-        // The author "You" matches the currentUser string passed to the adapter, enabling deletion
-        Comment newComment = new Comment("You", commentText, R.drawable.profile_icon);
-        post.addCommentObject(newComment);
-        hasChanges = true;
+        SharedPreferences prefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = prefs.getString("USERNAME", null);
+        String password = prefs.getString("PASSWORD", null);
 
-        adapter.notifyItemInserted(0);
-        commentsRecyclerView.scrollToPosition(0);
-        etCommentInput.setText("");
-        updateCommentsVisibility();
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AddCommentReq req = new AddCommentReq(
+                username,
+                password,
+                post.getPostId(),
+                commentText
+        );
+
+        ApiClient.get().addComment(req).enqueue(new retrofit2.Callback<AddCommentRes>() {
+            @Override
+            public void onResponse(retrofit2.Call<AddCommentRes> call,
+                                   retrofit2.Response<AddCommentRes> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(CommentsActivity.this, "Server error", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                AddCommentRes body = response.body();
+                if (!body.IsSuccess) {
+                    Toast.makeText(CommentsActivity.this, "Failed: " + body.error, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Comment newComment = new Comment("You", commentText, R.drawable.profile_icon);
+                post.addCommentObject(newComment);
+                hasChanges = true;
+
+                adapter.notifyItemInserted(0);
+                commentsRecyclerView.scrollToPosition(0);
+                etCommentInput.setText("");
+                updateCommentsVisibility();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<AddCommentRes> call, Throwable t) {
+                Toast.makeText(CommentsActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateCommentsVisibility() {
@@ -110,4 +161,64 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
         }
         super.finish();
     }
+
+    private void loadCommentsFromServer() {
+
+        SharedPreferences prefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = prefs.getString("USERNAME", null);
+        String password = prefs.getString("PASSWORD", null);
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ApiClient.get().getComments(username, password, post.getPostId())
+                .enqueue(new retrofit2.Callback<GetCommentsRes>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<GetCommentsRes> call,
+                                           retrofit2.Response<GetCommentsRes> response) {
+
+                        if (!response.isSuccessful() || response.body() == null) {
+                            Toast.makeText(CommentsActivity.this, "Failed to load comments", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        GetCommentsRes res = response.body();
+                        if (res.Comments == null) return;
+
+                        post.getCommentObjects().clear();
+
+                        for (CommentDto dto : res.Comments) {
+                            String cAuthor = dto.username != null ? dto.username : "";
+                            if (cAuthor.equals(username)) cAuthor = "You";
+
+                            String content = dto.content != null ? dto.content : "";
+                            long timeMs = parseUtc(dto.createdAt);
+
+                            Comment nc = new Comment(cAuthor, content, R.drawable.profile_icon, timeMs);
+                            post.addCommentObject(nc);
+                        }
+
+                        adapter.notifyDataSetChanged();
+                        updateCommentsVisibility();
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<GetCommentsRes> call, Throwable t) {
+                        Toast.makeText(CommentsActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+    private long parseUtc(String s) {
+        try {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime ldt = LocalDateTime.parse(s, fmt);
+            return ldt.toInstant(ZoneOffset.UTC).toEpochMilli();
+        } catch (Exception e) {
+            return System.currentTimeMillis();
+        }
+    }
+
+
 }
