@@ -61,9 +61,8 @@ public interface ApiService {
     @POST("cse476/group6/api/comments/create")
     Call<AddCommentRes> addComment(@Body AddCommentReq body);
 
-    // 수정필
-    @GET("cse476/group6/api/comments/byPost")
-    Call<GetCommentsRes> getCommentsByPost(
+    @GET("cse476/group6/api/comments")
+    Call<GetCommentsRes> getComments(
             @Query("username") String username,
             @Query("password") String password,
             @Query("postId") int postId
