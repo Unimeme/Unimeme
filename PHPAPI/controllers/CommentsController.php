@@ -60,7 +60,7 @@ final class CommentsController {
         $p = (string)($b['password'] ?? '');
         $postId = (int)($b['postId'] ?? 0);
 
-        $content = trim((string)($b['Comment'] ?? ''));
+        $content = trim((string)($b['Comment'] ?? $b['comment'] ?? ''));
 
         if ($u === '' || $p === '' || $postId <= 0 || $content === '') {
             http_response_code(400);
