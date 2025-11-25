@@ -95,6 +95,9 @@ try {
     case $path === '/api/comments/create' && $method === 'POST':
       (new CommentsController($pdo))->addComment(); break;
 
+    case $path === '/api/comments/delete' && $method === 'DELETE':
+      (new CommentsController($pdo))->deleteComment(); break;
+
     // ===== Followers (placeholders) =====
     // case $path === '/api/followers/follow' && $method === 'POST':
     //   (new FollowersController($pdo))->follow(); break;
