@@ -44,6 +44,7 @@ public class PostMapper {
                 0,
                 createdAtMs
         );
+        post.setPostId(dto.postId);
 
         if (dto.comments != null) {
             for (CommentDto c : dto.comments) {

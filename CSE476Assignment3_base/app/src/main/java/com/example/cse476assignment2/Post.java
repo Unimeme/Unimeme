@@ -26,6 +26,16 @@ public class Post implements Serializable {
 
     private List<String> hashtags;
 
+    private int postId;
+
+    public int getPostId() {
+        return postId;
+    }
+
+    public void setPostId(int postId) {
+        this.postId = postId;
+    }
+
     public Post(Uri imageUri, String caption, String author, String location) {
         this(imageUri, caption, author, location, 0, System.currentTimeMillis());
     }

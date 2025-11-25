@@ -1,10 +1,13 @@
 package com.example.cse476assignment2.net;
 
+import com.example.cse476assignment2.model.Req.AddCommentReq;
 import com.example.cse476assignment2.model.Req.CreatePostReq;
 import com.example.cse476assignment2.model.Req.LoginReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
 import com.example.cse476assignment2.model.Req.UpdateUserReq;
+import com.example.cse476assignment2.model.Res.AddCommentRes;
 import com.example.cse476assignment2.model.Res.CreatePostRes;
+import com.example.cse476assignment2.model.Res.GetCommentsRes;
 import com.example.cse476assignment2.model.Res.GetPostFeedRes;
 import com.example.cse476assignment2.model.Res.LoginRes;
 import com.example.cse476assignment2.model.Res.SignUpRes;
@@ -53,5 +56,16 @@ public interface ApiService {
             @Query("password") String password,
             @Query("limit") Integer limit,
             @Query("afterId") Integer afterId
+    );
+
+    @POST("cse476/group6/api/comments/create")
+    Call<AddCommentRes> addComment(@Body AddCommentReq body);
+
+    // 수정필
+    @GET("cse476/group6/api/comments/byPost")
+    Call<GetCommentsRes> getCommentsByPost(
+            @Query("username") String username,
+            @Query("password") String password,
+            @Query("postId") int postId
     );
 }

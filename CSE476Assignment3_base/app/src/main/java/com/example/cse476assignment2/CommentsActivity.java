@@ -2,6 +2,7 @@
 package com.example.cse476assignment2;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -11,6 +12,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.cse476assignment2.model.Req.AddCommentReq;
+import com.example.cse476assignment2.model.Res.AddCommentRes;
+import com.example.cse476assignment2.net.ApiClient;
 import com.google.android.material.appbar.MaterialToolbar;
 
 // UPDATED: Implement the new, more general listener
@@ -61,15 +66,62 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
             Toast.makeText(this, "Cannot post an empty comment", Toast.LENGTH_SHORT).show();
             return;
         }
-        // The author "You" matches the currentUser string passed to the adapter, enabling deletion
-        Comment newComment = new Comment("You", commentText, R.drawable.profile_icon);
-        post.addCommentObject(newComment);
-        hasChanges = true;
+        SharedPreferences prefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = prefs.getString("USERNAME", null);
+        String password = prefs.getString("PASSWORD", null);
 
-        adapter.notifyItemInserted(0);
-        commentsRecyclerView.scrollToPosition(0);
-        etCommentInput.setText("");
-        updateCommentsVisibility();
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AddCommentReq req = new AddCommentReq(
+                username,
+                password,
+                post.getPostId(),
+                commentText
+        );
+//        // The author "You" matches the currentUser string passed to the adapter, enabling deletion
+//        Comment newComment = new Comment("You", commentText, R.drawable.profile_icon);
+//        post.addCommentObject(newComment);
+//        hasChanges = true;
+//
+//        adapter.notifyItemInserted(0);
+//        commentsRecyclerView.scrollToPosition(0);
+//        etCommentInput.setText("");
+//        updateCommentsVisibility();
+        ApiClient.get().addComment(req).enqueue(new retrofit2.Callback<AddCommentRes>() {
+            @Override
+            public void onResponse(retrofit2.Call<AddCommentRes> call,
+                                   retrofit2.Response<AddCommentRes> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(CommentsActivity.this, "Server error", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                AddCommentRes body = response.body();
+                if (!body.IsSuccess) {
+                    Toast.makeText(CommentsActivity.this, "Failed: " + body.error, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Comment newComment = new Comment("You", commentText, R.drawable.profile_icon);
+                post.addCommentObject(newComment);
+                hasChanges = true;
+
+                adapter.notifyItemInserted(0);
+                commentsRecyclerView.scrollToPosition(0);
+                etCommentInput.setText("");
+                updateCommentsVisibility();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<AddCommentRes> call, Throwable t) {
+                Toast.makeText(CommentsActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateCommentsVisibility() {
