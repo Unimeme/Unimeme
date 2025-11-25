@@ -15,7 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cse476assignment2.model.CommentDto;
 import com.example.cse476assignment2.model.Req.AddCommentReq;
+import com.example.cse476assignment2.model.Req.DeleteCommentReq;
 import com.example.cse476assignment2.model.Res.AddCommentRes;
+import com.example.cse476assignment2.model.Res.DeleteCommentRes;
 import com.example.cse476assignment2.model.Res.GetCommentsRes;
 import com.example.cse476assignment2.net.ApiClient;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -23,6 +25,10 @@ import com.google.android.material.appbar.MaterialToolbar;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 // UPDATED: Implement the new, more general listener
 public class CommentsActivity extends AppCompatActivity implements CommentAdapter.OnCommentInteractionListener {
@@ -107,6 +113,7 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
                 }
 
                 Comment newComment = new Comment("You", commentText, R.drawable.profile_icon);
+                newComment.setCommentId(body.commentId);
                 post.addCommentObject(newComment);
                 hasChanges = true;
 
@@ -141,13 +148,49 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
     // --- NEW: Implementation of the onDeleteClicked method ---
     @Override
     public void onDeleteClicked(int position) {
-        if (position >= 0 && position < post.getCommentObjects().size()) {
-            post.getCommentObjects().remove(position); // Remove from the data list
-            adapter.notifyItemRemoved(position); // Animate removal in RecyclerView
-            hasChanges = true; // Mark for saving
-            updateCommentsVisibility(); // Check if "No comments" should be shown
+
+        SharedPreferences prefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = prefs.getString("USERNAME", null);
+        String password = prefs.getString("PASSWORD", null);
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        Comment c = post.getCommentObjects().get(position);
+        int commentId = c.getCommentId();
+
+        DeleteCommentReq req = new DeleteCommentReq(username, password, commentId);
+
+        ApiClient.get().deleteComment(req).enqueue(new Callback<DeleteCommentRes>() {
+            @Override
+            public void onResponse(Call<DeleteCommentRes> call, Response<DeleteCommentRes> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(CommentsActivity.this, "Server error", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                DeleteCommentRes res = response.body();
+                if (!res.IsSuccess) {
+                    Toast.makeText(CommentsActivity.this, "Delete failed: " + res.error, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                post.getCommentObjects().remove(position);
+                adapter.notifyItemRemoved(position);
+                hasChanges = true;
+                updateCommentsVisibility();
+            }
+
+            @Override
+            public void onFailure(Call<DeleteCommentRes> call, Throwable t) {
+                Toast.makeText(CommentsActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
 
     @Override
     public void finish() {
@@ -197,6 +240,7 @@ public class CommentsActivity extends AppCompatActivity implements CommentAdapte
                             long timeMs = parseUtc(dto.createdAt);
 
                             Comment nc = new Comment(cAuthor, content, R.drawable.profile_icon, timeMs);
+                            nc.setCommentId(dto.commentId);
                             post.addCommentObject(nc);
                         }
 

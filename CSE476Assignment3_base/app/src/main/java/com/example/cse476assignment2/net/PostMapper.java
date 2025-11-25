@@ -61,7 +61,7 @@ public class PostMapper {
                         R.drawable.profile_icon,
                         cTimeMs
                 );
-
+                newComment.setCommentId(c.commentId);
                 post.addCommentObject(newComment);
             }
         }
@@ -79,5 +79,7 @@ public class PostMapper {
             return System.currentTimeMillis();
         }
     }
+
+
 }
 

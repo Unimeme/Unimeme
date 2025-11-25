@@ -9,6 +9,16 @@ public class Comment implements Serializable {
     private final String text;
     private final long timestamp;
     private final int authorProfileImageResId;
+    private int commentId;
+
+    public int getCommentId() {
+        return commentId;
+    }
+
+    public void setCommentId(int id) {
+        this.commentId = id;
+    }
+
 
     private int likeCount = 0;
     private boolean isLikedByCurrentUser = false;
