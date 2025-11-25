@@ -21,6 +21,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.cse476assignment2.model.Req.DeletePostReq;
+import com.example.cse476assignment2.model.Res.DeletePostRes;
 import com.example.cse476assignment2.model.Res.GetPostFeedRes;
 import com.example.cse476assignment2.model.PostDto;
 import com.example.cse476assignment2.net.ApiClient;
@@ -250,19 +252,61 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
     @Override
     public void onDeleteClick(int position) {
+        SharedPreferences prefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+        String username = prefs.getString("USERNAME", null);
+        String password = prefs.getString("PASSWORD", null);
+
+        if (username == null || password == null) {
+            Toast.makeText(this, "Not logged in.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Post target = userPosts.get(position);
+
         new AlertDialog.Builder(this)
                 .setTitle("Delete Post")
-                .setMessage("Are you sure you want to delete this post? This cannot be undone.")
+                .setMessage("Are you sure you want to delete this post?")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    userPosts.remove(position);
-                    postAdapter.notifyItemRemoved(position);
-                    DataManager.savePosts(CommunityPostsActivity.this, userPosts);
-                    Toast.makeText(this, "Post deleted successfully.", Toast.LENGTH_SHORT).show();
+
+                    DeletePostReq req = new DeletePostReq(username, password, target.getPostId());
+
+                    ApiClient.get().deletePost(req)
+                            .enqueue(new Callback<DeletePostRes>() {
+                                @Override
+                                public void onResponse(Call<DeletePostRes> call,
+                                                       Response<DeletePostRes> response) {
+
+                                    if (!response.isSuccessful() || response.body() == null) {
+                                        Toast.makeText(CommunityPostsActivity.this,
+                                                "Server error", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+
+                                    DeletePostRes res = response.body();
+                                    if (!res.IsSuccess) {
+                                        Toast.makeText(CommunityPostsActivity.this,
+                                                "Delete failed: " + res.error, Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+
+                                    userPosts.remove(position);
+                                    postAdapter.notifyItemRemoved(position);
+                                    Toast.makeText(CommunityPostsActivity.this,
+                                            "Post deleted.", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onFailure(Call<DeletePostRes> call, Throwable t) {
+                                    Toast.makeText(CommunityPostsActivity.this,
+                                            "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+
                 })
                 .setNegativeButton("No", null)
-                .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
+
 
     private void setupSortSpinner(Spinner sortSpinner) {
         ArrayAdapter<CharSequence> adapter =
