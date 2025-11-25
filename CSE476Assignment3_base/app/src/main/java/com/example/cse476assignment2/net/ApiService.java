@@ -2,11 +2,13 @@ package com.example.cse476assignment2.net;
 
 import com.example.cse476assignment2.model.Req.AddCommentReq;
 import com.example.cse476assignment2.model.Req.CreatePostReq;
+import com.example.cse476assignment2.model.Req.DeleteCommentReq;
 import com.example.cse476assignment2.model.Req.LoginReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
 import com.example.cse476assignment2.model.Req.UpdateUserReq;
 import com.example.cse476assignment2.model.Res.AddCommentRes;
 import com.example.cse476assignment2.model.Res.CreatePostRes;
+import com.example.cse476assignment2.model.Res.DeleteCommentRes;
 import com.example.cse476assignment2.model.Res.GetCommentsRes;
 import com.example.cse476assignment2.model.Res.GetPostFeedRes;
 import com.example.cse476assignment2.model.Res.LoginRes;
@@ -19,6 +21,7 @@ import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.HTTP;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
@@ -67,4 +70,8 @@ public interface ApiService {
             @Query("password") String password,
             @Query("postId") int postId
     );
+
+    @HTTP(method = "DELETE", path = "cse476/group6/api/comments/delete", hasBody = true)
+    Call<DeleteCommentRes> deleteComment(@Body DeleteCommentReq body);
+
 }
