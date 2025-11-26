@@ -40,6 +40,10 @@
         <activity android:name=".HashtagPostsActivity" />
         <activity android:name=".SignUpActivity" />
         <activity android:name=".TermsActivity" />
+        <activity android:name=".ChatPartnersActivity" />
+        <activity android:name=".ChatRoomActivity" />
+        <activity android:name=".ChatSearchActivity" />
+
 
         <provider
             android:name="androidx.core.content.FileProvider"

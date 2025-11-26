@@ -15,8 +15,8 @@ public class AccountActivity extends AppCompatActivity {
     Button leaderboardButton, communityPostsButton, logoutButton, accountSettingsButton, messageButton, achievementButton;
     SharedPreferences sharedPreferences;
 
-    private String currentUsername;  // Username used for login and server
-    private String currentEmail;     // School email (display only)
+    private String currentUsername;
+    private String currentEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,13 +25,11 @@ public class AccountActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
 
-        // Load login username from Intent or LOGIN_PREFS
         currentUsername = getIntent().getStringExtra("USERNAME");
         if (currentUsername == null) {
             currentUsername = sharedPreferences.getString("USERNAME", "User");
         }
 
-        // Bind UI elements
         displayNameTextView = findViewById(R.id.displayNameTextView);
         emailTextView = findViewById(R.id.emailTextView);
         leaderboardButton = findViewById(R.id.button4);
@@ -41,16 +39,13 @@ public class AccountActivity extends AppCompatActivity {
         messageButton = findViewById(R.id.buttonMessages);
         achievementButton = findViewById(R.id.buttonAchievements);
 
-        // Load user-specific preferences
         SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + currentUsername, MODE_PRIVATE);
         String displayName = userPrefs.getString("USER_DISPLAY_NAME", currentUsername);
-        currentEmail = userPrefs.getString("USER_EMAIL", currentUsername); // fallback to username if email is missing
+        currentEmail = userPrefs.getString("USER_EMAIL", currentUsername);
 
-        // Display data
         displayNameTextView.setText(displayName);
         emailTextView.setText(currentEmail);
 
-        // Button listeners
         leaderboardButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccountActivity.this, LeaderboardActivity.class);
             startActivity(intent);
@@ -73,8 +68,24 @@ public class AccountActivity extends AppCompatActivity {
             finish();
         });
 
+        // ★ NEW: Open chat system
         messageButton.setOnClickListener(v -> {
-            Toast.makeText(AccountActivity.this, "Coming soon!", Toast.LENGTH_SHORT).show();
+
+            SharedPreferences loginPrefs = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
+            String username = loginPrefs.getString("USERNAME", null);
+            String password = loginPrefs.getString("PASSWORD", null);
+            long userId = loginPrefs.getLong("USER_ID", -1);
+
+            if (username == null || password == null || userId == -1) {
+                Toast.makeText(AccountActivity.this, "Login info missing", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Intent i = new Intent(AccountActivity.this, com.example.cse476assignment2.ChatPartnersActivity.class);
+            i.putExtra("username", username);
+            i.putExtra("password", password);
+            i.putExtra("userId", userId);
+            startActivity(i);
         });
 
         achievementButton.setOnClickListener(v -> {
@@ -82,7 +93,6 @@ public class AccountActivity extends AppCompatActivity {
         });
     }
 
-    // Refresh values in case user changed display name or username in PreferencesActivity
     @Override
     protected void onResume() {
         super.onResume();
@@ -91,7 +101,6 @@ public class AccountActivity extends AppCompatActivity {
             sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
         }
 
-        // Username may have changed
         currentUsername = sharedPreferences.getString("USERNAME", currentUsername);
 
         SharedPreferences userPrefs = getSharedPreferences("USER_PREFS_" + currentUsername, MODE_PRIVATE);

@@ -4,14 +4,18 @@ import com.example.cse476assignment2.model.Req.AddCommentReq;
 import com.example.cse476assignment2.model.Req.CreatePostReq;
 import com.example.cse476assignment2.model.Req.DeleteCommentReq;
 import com.example.cse476assignment2.model.Req.LoginReq;
+import com.example.cse476assignment2.model.Req.SendMessageReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
 import com.example.cse476assignment2.model.Req.UpdateUserReq;
 import com.example.cse476assignment2.model.Res.AddCommentRes;
 import com.example.cse476assignment2.model.Res.CreatePostRes;
 import com.example.cse476assignment2.model.Res.DeleteCommentRes;
 import com.example.cse476assignment2.model.Res.GetCommentsRes;
+import com.example.cse476assignment2.model.Res.GetPartnersRes;
 import com.example.cse476assignment2.model.Res.GetPostFeedRes;
+import com.example.cse476assignment2.model.Res.GetThreadRes;
 import com.example.cse476assignment2.model.Res.LoginRes;
+import com.example.cse476assignment2.model.Res.SendMessageRes;
 import com.example.cse476assignment2.model.Res.SignUpRes;
 import com.example.cse476assignment2.model.Res.UpdateUserRes;
 import com.example.cse476assignment2.model.Res.UploadImageRes;
@@ -73,5 +77,29 @@ public interface ApiService {
 
     @HTTP(method = "DELETE", path = "cse476/group6/api/comments/delete", hasBody = true)
     Call<DeleteCommentRes> deleteComment(@Body DeleteCommentReq body);
+
+    // =============================
+// Messaging API
+// =============================
+
+    // Send a message
+    @POST("cse476/group6/api/messages/send")
+    Call<SendMessageRes> sendMessage(@Body SendMessageReq body);
+
+    // Get thread between two users
+    @GET("cse476/group6/api/messages/thread")
+    Call<GetThreadRes> getThread(
+            @Query("username") String username,
+            @Query("password") String password,
+            @Query("partner") String partnerUsername
+    );
+
+    // Get user's chat partner list
+    @GET("cse476/group6/api/messages/partners")
+    Call<GetPartnersRes> getPartners(
+            @Query("username") String username,
+            @Query("password") String password
+    );
+
 
 }
