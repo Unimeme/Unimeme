@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences("LOGIN_PREFS", MODE_PRIVATE);
 
-        // Auto-login only if we have both USERNAME and PASSWORD
+        // Auto-login only if USERNAME + PASSWORD exist
         boolean loggedIn = sharedPreferences.getBoolean("LOGGED_IN", false);
         String savedUser = sharedPreferences.getString("USERNAME", null);
         String savedPass = sharedPreferences.getString("PASSWORD", null);
@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
             applyUserDarkModePreference(savedUser);
             goToAccountPage(savedUser);
         }
-
 
         loginButton.setOnClickListener(v -> {
             String user = username.getText().toString().trim();
@@ -69,17 +68,20 @@ public class MainActivity extends AppCompatActivity {
                 public void onResponse(Call<LoginRes> call, Response<LoginRes> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         LoginRes res = response.body();
+
                         if (res.ok && res.user != null) {
                             Toast.makeText(MainActivity.this,
                                     "Welcome " + res.user.username,
                                     Toast.LENGTH_SHORT).show();
 
-                            // NEW: Always store USERNAME + PASSWORD for this session
                             SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.putString("USERNAME", res.user.username); // for account / posts
-                            editor.putString("PASSWORD", pass);              // for server auth (upload, feed)
+                            editor.putString("USERNAME", res.user.username);
+                            editor.putString("PASSWORD", pass);
 
-                            // NEW: "Remember me" only controls auto-login flag
+                            // IMPORTANT: Save user_id for messaging
+                            editor.putLong("USER_ID", res.user.user_id);
+                            editor.putBoolean("LOGGED_IN", rememberMe.isChecked());
+                            editor.apply();
                             if (rememberMe.isChecked()) {
                                 editor.putBoolean("LOGGED_IN", true);
                             } else {
@@ -90,11 +92,13 @@ public class MainActivity extends AppCompatActivity {
 
                             applyUserDarkModePreference(res.user.username);
                             goToAccountPage(res.user.username);
+
                         } else {
                             Toast.makeText(MainActivity.this,
                                     "Login failed: " + res.error,
                                     Toast.LENGTH_SHORT).show();
                         }
+
                     } else {
                         Toast.makeText(MainActivity.this,
                                 "Server error (" + response.code() + ")",

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFDF9">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/txtPartnersTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Chat Partners"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingTop="24dp"
+        android:paddingBottom="16dp"
+        android:textColor="#444444" />
+
+    <!-- RecyclerView area (with padding to make cards float) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPartners"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:clipToPadding="false" />
+
+    <!-- New chat button -->
+    <Button
+        android:id="@+id/btnNewChat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start New Chat"
+        android:backgroundTint="#86DDA6"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:layout_margin="18dp"
+        android:padding="12dp"
+        android:background="@drawable/btn_newchat_style" />
+
+</LinearLayout>
