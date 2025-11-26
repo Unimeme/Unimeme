@@ -27,10 +27,11 @@ require_once __DIR__ . '/../controllers/PostsController.php';
 require_once __DIR__ . '/../controllers/LocationsController.php';
 require_once __DIR__ . '/../controllers/FollowersController.php';
 require_once __DIR__ . '/../controllers/CommentsController.php';
+require_once __DIR__ . '/../controllers/MessagesController.php';   // <-- NEW
 
 use App\Database;
 
-// ---- common headers (API style) ----
+// ---- common / headers ----
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
@@ -42,13 +43,14 @@ $pdo = (new Database())->pdo();
 
 // ---- base path trimming for DECS (/cse476/<group>) ----
 $path   = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$base   = '/cse476/group6'; // <-- adjust if your group path changes
+$base   = '/cse476/group6';
 if (strpos($path, $base) === 0) $path = substr($path, strlen($base));
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // ---- routing ----
 try {
   switch (true) {
+
     // ===== Users =====
     case $path === '/api/users/create' && $method === 'POST':
       (new UsersController($pdo))->createUser();  break;
@@ -72,8 +74,8 @@ try {
     case $path === '/api/posts/create' && $method === 'POST':
       (new PostsController($pdo))->createPost();  break;
 
-     case $path === '/api/posts/upload' && $method === 'POST':
-        (new PostsController($pdo))->uploadPostImage();  break;
+    case $path === '/api/posts/upload' && $method === 'POST':
+      (new PostsController($pdo))->uploadPostImage();  break;
 
     case $path === '/api/posts/delete' && $method === 'DELETE':
       (new PostsController($pdo))->deletePost();  break;
@@ -95,19 +97,29 @@ try {
     case $path === '/api/comments/create' && $method === 'POST':
       (new CommentsController($pdo))->addComment(); break;
 
-    // ===== Followers (placeholders) =====
-    // case $path === '/api/followers/follow' && $method === 'POST':
-    //   (new FollowersController($pdo))->follow(); break;
-    // case $path === '/api/followers' && $method === 'GET':
-    //   (new FollowersController($pdo))->getFollowers(); break;
-    // case $path === '/api/following' && $method === 'GET':
-    //   (new FollowersController($pdo))->getFollowing(); break;
+    case $path === '/api/comments/delete' && $method === 'DELETE':
+      (new CommentsController($pdo))->deleteComment(); break;
 
+    // ============================
+    // ===== Messages (NEW!) ======
+    // ============================
+
+    case $path === '/api/messages/send' && $method === 'POST':
+      (new MessagesController($pdo))->sendMessage(); break;
+
+    case $path === '/api/messages/thread' && $method === 'GET':
+      (new MessagesController($pdo))->getThread(); break;
+
+    case $path === '/api/messages/partners' && $method === 'GET':
+      (new MessagesController($pdo))->getPartners(); break;
+
+    // ===== Default =====
     default:
       http_response_code(404);
       echo json_encode(['ok'=>false,'error'=>'not_found','path'=>$path]);
   }
-} catch (Throwable $e) {
+}
+catch (Throwable $e) {
   error_log('ROUTER FAIL: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
   http_response_code(500);
   echo json_encode(['ok'=>false,'error'=>'internal']);
