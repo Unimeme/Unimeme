@@ -8,28 +8,27 @@ final class PostsController {
         $this->pdo = $pdo;
     }
 
-    // ----------------------------
+    // ==========================
     // Auth helper
-    // ----------------------------
+    // ==========================
     private function authUser(string $username, string $password): ?array {
-        $s = $this->pdo->prepare(
+        $stmt = $this->pdo->prepare(
             "SELECT user_id, username, password_hash
                FROM users
               WHERE username = :u"
         );
-        $s->execute([':u' => $username]);
-        $r = $s->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([':u' => $username]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return ($r && \App\Security::verifyPassword($password, (string)$r['password_hash']))
-            ? $r
+        return ($row && \App\Security::verifyPassword($password, $row['password_hash']))
+            ? $row
             : null;
     }
 
-    /** ----------------------------
-     *  5) CreatePost (POST)
-     *  Body (JSON): { username, password, imageUrl, caption?, locationId? }
-     *  Res : { IsSuccess:bool, postId:int|null, error?:string }
-     *  ---------------------------- */
+    // =========================================================
+    // 5) CreatePost (POST)
+    // Body: { username, password, imageUrl, caption?, locationId? }
+    // =========================================================
     public function createPost(): void {
         $raw = file_get_contents('php://input') ?: '';
         $b   = json_decode($raw, true);
@@ -45,67 +44,48 @@ final class PostsController {
 
         if ($u === '' || $p === '' || $img === '') {
             http_response_code(400);
-            echo json_encode([
-                'IsSuccess' => false,
-                'postId'    => null,
-                'error'     => 'missing_fields'
-            ]);
+            echo json_encode(['IsSuccess'=>false,'postId'=>null,'error'=>'missing_fields']);
             return;
         }
 
         $user = $this->authUser($u, $p);
         if (!$user) {
             http_response_code(401);
-            echo json_encode([
-                'IsSuccess' => false,
-                'postId'    => null,
-                'error'     => 'auth_failed'
-            ]);
+            echo json_encode(['IsSuccess'=>false,'postId'=>null,'error'=>'auth_failed']);
             return;
         }
 
         try {
-            $sql = "INSERT INTO posts (user_id, location_id, image_url, caption, created_at)
-                    VALUES (:uid, :loc, :img, :cap, UTC_TIMESTAMP())";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->pdo->prepare(
+                "INSERT INTO posts (user_id, location_id, image_url, caption, created_at)
+                 VALUES (:uid, :loc, :img, :cap, UTC_TIMESTAMP())"
+            );
 
-            $stmt->bindValue(':uid', (int)$user['user_id'], \PDO::PARAM_INT);
+            $stmt->bindValue(':uid', (int)$user['user_id'], PDO::PARAM_INT);
+            $stmt->bindValue(':img', $img);
+            $stmt->bindValue(':cap', $cap);
 
             if ($loc === null || $loc === '') {
-                $stmt->bindValue(':loc', null, \PDO::PARAM_NULL);
+                $stmt->bindValue(':loc', null, PDO::PARAM_NULL);
             } else {
-                $stmt->bindValue(':loc', (int)$loc, \PDO::PARAM_INT);
+                $stmt->bindValue(':loc', (int)$loc, PDO::PARAM_INT);
             }
 
-            $stmt->bindValue(':img', $img, \PDO::PARAM_STR);
-            $stmt->bindValue(':cap', $cap, \PDO::PARAM_STR);
-
             $stmt->execute();
-
             $postId = (int)$this->pdo->lastInsertId();
 
-            echo json_encode([
-                'IsSuccess' => true,
-                'postId'    => $postId,
-                'error'     => null
-            ]);
+            echo json_encode(['IsSuccess'=>true,'postId'=>$postId,'error'=>null]);
+
         } catch (\Throwable $e) {
-            error_log('PostsController::createPost FAIL: '.$e->getMessage());
+            error_log("createPost FAIL: ".$e->getMessage());
             http_response_code(500);
-            echo json_encode([
-                'IsSuccess' => false,
-                'postId'    => null,
-                'error'     => 'internal'
-            ]);
+            echo json_encode(['IsSuccess'=>false,'postId'=>null,'error'=>'internal']);
         }
     }
 
-    /** ----------------------------
-     *  5-1) uploadPostImage (multipart/form-data)
-     *  POST /api/posts/upload
-     *  Fields: username, password, image(file)
-     *  Res: { IsSuccess:bool, imageUrl?:string, error?:string }
-     *  ---------------------------- */
+    // =========================================================
+    // 5-1) Upload Post Image (multipart/form-data)
+    // =========================================================
     public function uploadPostImage(): void {
         $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
@@ -129,16 +109,16 @@ final class PostsController {
             return;
         }
 
-        $uploadDirFs   = __DIR__ . '/../uploads/';    // filesystem path
-        $uploadBaseUrl = '/cse476/group6/uploads/';   // URL prefix
+        $uploadDirFs   = __DIR__ . '/../uploads/';
+        $uploadBaseUrl = '/cse476/group6/uploads/';
 
         if (!is_dir($uploadDirFs)) {
             @mkdir($uploadDirFs, 0775, true);
         }
 
         $origName = $_FILES['image']['name'];
-        $ext      = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
-        $allowed  = ['jpg','jpeg','png','gif','webp'];
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        $allowed = ['jpg','jpeg','png','gif','webp'];
 
         if (!in_array($ext, $allowed, true)) {
             http_response_code(400);
@@ -146,32 +126,31 @@ final class PostsController {
             return;
         }
 
-        $newName      = bin2hex(random_bytes(16)).'.'.$ext;
-        $targetFsPath = $uploadDirFs.$newName;
+        $newName = bin2hex(random_bytes(16)).'.'.$ext;
+        $targetFs = $uploadDirFs.$newName;
 
-        if (!move_uploaded_file($_FILES['image']['tmp_name'], $targetFsPath)) {
+        if (!move_uploaded_file($_FILES['image']['tmp_name'], $targetFs)) {
             http_response_code(500);
             echo json_encode(['IsSuccess'=>false,'error'=>'upload_failed']);
             return;
         }
 
-        $imageUrl = $uploadBaseUrl.$newName;
-
         echo json_encode([
-            'IsSuccess' => true,
-            'imageUrl'  => $imageUrl
+            'IsSuccess'=>true,
+            'imageUrl'=>$uploadBaseUrl.$newName
         ]);
     }
 
-    /** ----------------------------
-     *  6) DeletePost (DELETE)
-     *  Body: { username, password, postId }
-     *  Res: { IsSuccess:bool, error?:string }
-     *  ---------------------------- */
+    // =========================================================
+    // 6) DeletePost (DELETE)
+    // Body: { username, password, postId }
+    // =========================================================
     public function deletePost(): void {
         $raw = file_get_contents('php://input');
         $b   = json_decode($raw,true);
-        if (!is_array($b)) parse_str($raw,$b);
+        if (!is_array($b)) {
+            parse_str($raw,$b);
+        }
 
         $u   = trim((string)($b['username']??''));
         $p   = (string)($b['password']??'');
@@ -183,68 +162,63 @@ final class PostsController {
             return;
         }
 
-        $user=$this->authUser($u,$p);
-        if(!$user){
+        $user = $this->authUser($u,$p);
+        if (!$user) {
             http_response_code(401);
             echo json_encode(['IsSuccess'=>false,'error'=>'auth_failed']);
             return;
         }
 
-        $own=$this->pdo->prepare(
+        // Check ownership
+        $own = $this->pdo->prepare(
             "SELECT 1 FROM posts WHERE post_id=:pid AND user_id=:uid"
         );
-        $own->execute([':pid'=>$pid, ':uid'=>(int)$user['user_id']]);
-        if(!$own->fetchColumn()){
+        $own->execute([':pid'=>$pid, ':uid'=>$user['user_id']]);
+
+        if (!$own->fetchColumn()) {
             echo json_encode(['IsSuccess'=>false,'error'=>'not_owner']);
             return;
         }
 
+        // Delete post + comments
         $this->pdo->beginTransaction();
         try {
             $this->pdo->prepare("DELETE FROM comments WHERE post_id=:pid")
-                      ->execute([':pid'=>$pid]);
+                ->execute([':pid'=>$pid]);
 
-            $ok=$this->pdo->prepare("DELETE FROM posts WHERE post_id=:pid")
-                          ->execute([':pid'=>$pid]);
+            $ok = $this->pdo->prepare("DELETE FROM posts WHERE post_id=:pid")
+                ->execute([':pid'=>$pid]);
 
             $this->pdo->commit();
-            echo json_encode(['IsSuccess'=>$ok]);
+
+            echo json_encode(['IsSuccess'=>$ok, 'error'=>null]);
 
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
-            error_log('PostsController::deletePost FAIL: '.$e->getMessage());
+            error_log("deletePost FAIL: ".$e->getMessage());
             http_response_code(500);
             echo json_encode(['IsSuccess'=>false,'error'=>'delete_failed']);
         }
     }
 
-    /** ----------------------------
-     *  7) GetPostFeed (GET)
-     *  Query: username,password,limit?,afterId?
-     *  Res:
-     *   {
-     *     posts:[{
-     *       post_id, created_at, image_url, caption,
-     *       author:{user_id,username,pic:null},
-     *       location:null,
-     *       comments:[{comment_id,post_id,user_id,username,content,created_at}]
-     *     }],
-     *     nextAfterId:int
-     *   }
-     *  ---------------------------- */
+    // =========================================================
+    // 7) GetPostFeed (GET)
+    // Query: username, password, limit?, afterId?
+    // =========================================================
     public function getPostFeed(): void {
         $u = trim((string)($_GET['username'] ?? ''));
         $p = (string)($_GET['password'] ?? '');
-        $limit = max(1, min(50, (int)($_GET['limit'] ?? 20)));
+        $limit   = max(1, min(50, (int)($_GET['limit'] ?? 20)));
         $afterId = (int)($_GET['afterId'] ?? 0);
 
         try {
-            $user = $this->authUser($u, $p);
+            $user = $this->authUser($u,$p);
             if (!$user) {
-                echo json_encode(['error' => 'auth_failed']);
+                echo json_encode(['error'=>'auth_failed']);
                 return;
             }
 
+            // load posts
             $sql = "SELECT p.post_id, p.user_id, p.location_id,
                            p.image_url, p.caption, p.created_at,
                            u.username
@@ -258,10 +232,11 @@ final class PostsController {
             $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             if (!$posts) {
-                echo json_encode(['posts' => [], 'nextAfterId' => 0]);
+                echo json_encode(['posts'=>[], 'nextAfterId'=>0]);
                 return;
             }
 
+            // load comments
             $pids = array_map(fn($r)=>(int)$r['post_id'], $posts);
             $ph   = implode(',', array_fill(0, count($pids), '?'));
 
@@ -280,6 +255,7 @@ final class PostsController {
             $c->execute($pids);
             $cmts = $c->fetchAll(PDO::FETCH_ASSOC);
 
+            // group by post_id
             $by = [];
             foreach ($cmts as $x) {
                 $by[(int)$x['post_id']][] = [
@@ -292,6 +268,7 @@ final class PostsController {
                 ];
             }
 
+            // output
             $out = [];
             foreach ($posts as $p0) {
                 $pid = (int)$p0['post_id'];
@@ -316,7 +293,7 @@ final class PostsController {
             ]);
 
         } catch (\Throwable $e) {
-            error_log("PostsController::getPostFeed FAIL: ".$e->getMessage());
+            error_log("getPostFeed FAIL: ".$e->getMessage());
             http_response_code(500);
             echo json_encode(['ok'=>false,'error'=>'internal']);
         }

@@ -16,8 +16,9 @@ final class CommentsController {
             : null;
     }
 
-    // 13) GET_COMMENTS_BY_POST (GET)
-    // GET /api/comments/byPost?username=...&password=...&postId=...
+    // ---------------------
+    // 13) GET_COMMENTS_BY_POST
+    // ---------------------
     public function getCommentsByPost(): void {
         $u = trim((string)($_GET['username'] ?? ''));
         $p = (string)($_GET['password'] ?? '');
@@ -51,8 +52,9 @@ final class CommentsController {
         echo json_encode(['Comments' => $stmt->fetchAll()]);
     }
 
-    // 14) INSERT_COMMENT (POST)
-    // body: { username, password, postId, Comment }
+    // ---------------------
+    // 14) INSERT_COMMENT
+    // ---------------------
     public function addComment(): void {
         $b = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -88,6 +90,46 @@ final class CommentsController {
         echo json_encode([
             'IsSuccess' => $ok,
             'commentId' => $ok ? (int)$this->pdo->lastInsertId() : null
+        ]);
+    }
+
+    // ---------------------
+    // 15) DELETE_COMMENT
+    // ---------------------
+    public function deleteComment(): void {
+        $b = json_decode(file_get_contents('php://input'), true) ?? [];
+
+        $u = trim((string)($b['username'] ?? ''));
+        $p = (string)($b['password'] ?? '');
+        $commentId = (int)($b['commentId'] ?? 0);
+
+        if ($u === '' || $p === '' || $commentId <= 0) {
+            http_response_code(400);
+            echo json_encode(['IsSuccess' => false, 'error' => 'bad_request']);
+            return;
+        }
+
+        $me = $this->authUserRow($u, $p);
+        if (!$me) {
+            echo json_encode(['IsSuccess' => false, 'error' => 'auth_failed']);
+            return;
+        }
+
+        $uid = (int)$me['user_id'];
+
+        // Only delete own comment
+        $stmt = $this->pdo->prepare(
+            "DELETE FROM comments
+             WHERE comment_id = :cid AND commenter_user_id = :uid"
+        );
+
+        $ok = $stmt->execute([
+            ':cid' => $commentId,
+            ':uid' => $uid
+        ]);
+
+        echo json_encode([
+            'IsSuccess' => $ok
         ]);
     }
 }

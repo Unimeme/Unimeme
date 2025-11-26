@@ -3,6 +3,7 @@ package com.example.cse476assignment2.net;
 import com.example.cse476assignment2.model.Req.AddCommentReq;
 import com.example.cse476assignment2.model.Req.CreatePostReq;
 import com.example.cse476assignment2.model.Req.DeleteCommentReq;
+import com.example.cse476assignment2.model.Req.DeletePostReq;
 import com.example.cse476assignment2.model.Req.LoginReq;
 import com.example.cse476assignment2.model.Req.SendMessageReq;
 import com.example.cse476assignment2.model.Req.SignUpReq;
@@ -10,6 +11,7 @@ import com.example.cse476assignment2.model.Req.UpdateUserReq;
 import com.example.cse476assignment2.model.Res.AddCommentRes;
 import com.example.cse476assignment2.model.Res.CreatePostRes;
 import com.example.cse476assignment2.model.Res.DeleteCommentRes;
+import com.example.cse476assignment2.model.Res.DeletePostRes;
 import com.example.cse476assignment2.model.Res.GetCommentsRes;
 import com.example.cse476assignment2.model.Res.GetPartnersRes;
 import com.example.cse476assignment2.model.Res.GetPostFeedRes;
@@ -56,7 +58,7 @@ public interface ApiService {
     Call<CreatePostRes> createPost(@Body CreatePostReq body);
 
 
-    // get post
+    // post
     @GET("cse476/group6/api/posts/feed")
     Call<GetPostFeedRes> getPostFeed(
             @Query("username") String username,
@@ -65,6 +67,10 @@ public interface ApiService {
             @Query("afterId") Integer afterId
     );
 
+    @HTTP(method = "DELETE", path = "cse476/group6/api/posts/delete", hasBody = true)
+    Call<DeletePostRes> deletePost(@Body DeletePostReq body);
+
+    // comment
     @POST("cse476/group6/api/comments/create")
     Call<AddCommentRes> addComment(@Body AddCommentReq body);
 
