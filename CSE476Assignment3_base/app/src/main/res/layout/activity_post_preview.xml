@@ -54,6 +54,7 @@
             style="?android:attr/buttonBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:backgroundTint="#FF9800"
             android:text="@string/cancel" />
 
         <Button
@@ -61,8 +62,9 @@
             style="?android:attr/buttonBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/continue_next"
-            android:layout_marginStart="16dp" />
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#FF5722"
+            android:text="@string/continue_next" />
     </LinearLayout>
 
     <LinearLayout

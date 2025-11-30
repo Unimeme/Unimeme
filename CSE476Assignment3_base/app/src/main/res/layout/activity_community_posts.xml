@@ -103,11 +103,11 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="0dp"
             android:layout_height="56dp"
-            android:layout_weight="1"
             android:layout_margin="4dp"
+            android:layout_weight="1"
+            android:backgroundTint="#FF5722"
             android:text="@string/button_add_post"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#8E44AD"
             app:cornerRadius="16dp" />
 
 
@@ -116,14 +116,14 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="0dp"
             android:layout_height="56dp"
-            android:layout_weight="1"
             android:layout_margin="4dp"
+            android:layout_weight="1"
+            android:backgroundTint="#FF9800"
             android:text="@string/go_to_leaderboard"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#FF4081"
 
-            app:cornerRadius="16dp"
-            android:textSize="12.3sp" />
+            android:textSize="12.3sp"
+            app:cornerRadius="16dp" />
 
     </LinearLayout>
 

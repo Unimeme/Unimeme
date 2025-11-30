@@ -50,8 +50,9 @@
             android:id="@+id/btnPostComment"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Post"
-            android:layout_marginStart="8dp" />
+            android:layout_marginStart="8dp"
+            android:backgroundTint="#FF5722"
+            android:text="Post" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
