@@ -67,6 +67,7 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
         ImageButton backButton = findViewById(R.id.backButton);
         Button addPostButton = findViewById(R.id.btnAddPost);
+        Button leaderboardButton = findViewById(R.id.btnLeaderboard);
         postsRecyclerView = findViewById(R.id.recyclerPosts);
         Spinner sortSpinner = findViewById(R.id.sortSpinner);
 
@@ -88,6 +89,10 @@ public class CommunityPostsActivity extends AppCompatActivity implements PostAda
 
         backButton.setOnClickListener(v -> finish());
         addPostButton.setOnClickListener(v -> showImageSourceChooser());
+        leaderboardButton.setOnClickListener(v -> {
+            Intent intent = new Intent(CommunityPostsActivity.this, LeaderboardActivity.class);
+            startActivity(intent);
+        });
 
         loadFeed(true);
 
